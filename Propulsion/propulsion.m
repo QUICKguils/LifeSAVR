@@ -1,8 +1,5 @@
-% PROPULSION  Calculations related to the propulsion.
-%   Last update: 13/03/2023
-
 % PROCEDURE:
-% - Get an estimation of the thrust needed for the dash speed.
+% - Get an estimation of the thrust needed for the cruise speed.
 % - Translate this thrust to the equivalent thrust at sea level.
 % - Take a safety of around 20% more. We get the installed thrust.
 % - Translate this installed thrust to the uninstalled thrust. It
@@ -13,7 +10,7 @@
 % - Translate this SFC to the cruise conditions.
 % - We can now calculate the fuel weight, given the mission duration (no
 %   need to take into account the takeoff/landing at this stage, or
-%   maybe add someting like 2%).
+%   maybe add something like 2%).
 % ----------
 % - Next step, calculate the total weight, by summing all the parts
 %   (wings, tails, landing gears, engine, ...).
@@ -26,6 +23,7 @@
 %   just put a different engine.
 
 % TODO:
+% - use data gathered in Utils/constants.m
 % - use sweep angle at LE in the estimation of e.
 % - Check the 20% and the 8% factor: 20% seems too high. Provide refs.
 % - Think more about the air duct. What size, how to beneficiate from
@@ -33,46 +31,20 @@
 % - Carry out a small tradeoff study for the engine: BRP and SFC vs
 %   engine diameter (fuselage drag).
 
-clear;
+function propulsion
+% PROPULSION  Calculations related to the propulsion.
 
 %% Data.
 
-% Conversion factors.
-ft2m  = 0.3048;
-nmi2m = 1853.184;
-lb2kg = 0.45359237;
-lbf2N = 4.4482216152605;
+% Constant quantities.
+C = load(fullfile(pwd, "../constants.mat"));
 
-% Physical constants.
-g = 9.80665;  % Gravitational acceleration [m/s²].
-
-% Quantities given or directly calculated from the statement.
-t_loiter1      = 5 * 3600;      % Minimum loiter 1 time [s].
-t_loiter2      = 45 * 60;       % Minimum loiter 2 time [s].
-eg_range       = 2e3 * nmi2m;   % Minimum egress range [m].
-ig_range       = 850 * nmi2m;   % Minimum ingress range [m].
-M_cruise       = 0.86;          % Mach number during cruise.
-M_loiter       = 0.7;           % Mach number during loiter.
-M_dash         = 0.9;           % Mach number at dash speed.
-h              = 30e3 * ft2m;   % Cruise altitude [m].
-[rho, p, T, a] = ISA(h);        % Fluid properties at altitude h. See ISA.m
-V_cruise       = M_cruise * a;  % TAS at cruise [m/s].
-V_loiter       = M_loiter * a;  % TAS at loiter [m/s].
-V_dash         = M_dash   * a;  % TAS at dash   [m/s]
-W_payload      = 300 * lb2kg;   % Payload weight [kg].
-
-% Quantities retrieved from other parts.
-Cl     = 0.276;  % Coefficient of lift.               - wing
-AR     = 8;      % Aspect ratio.                      - wing
-Lambda = 24;     % Quarter chord sweep angle [°].     - wing
-e      = 0.612;  % Oswald's efficiency factor.        - wing
-S      = 7.36;   % Surface of the wing [m²].          - wing
-Cd_0   = 0.0172; % Lift-independent drag coefficient. - wing
-MTOW   = 3367;   % Initial guess of MTOW [kg].        - aircraft
+% Aircraft data.
+load(fullfile(pwd, "../data.mat"), "Wing", "Plane");
 
 % Selected engine data.
 % Thrust, SFC and BPR data are gathered by looking at either the
-% manufacturer's datasheets or the engine certificate (FAA or EASA).
+% manufacturer's data sheets or the engine certificate (FAA or EASA).
 % G is the "gas generator function". Correlation between G and BPR can
 % be found in:
 % Teams>Propulsion>Files>Sources>Bartel-SFC_Calculations.pdf (page 5)
@@ -105,22 +77,18 @@ engine = table2struct(engine_table("FJ44-4A", :));
 % e_straight = 1.78 * (1 - 0.045*AR^0.68)                     - 0.64;
 % e_swept    = 4.61 * (1 - 0.045*AR^0.68) * cosd(Lambda)^0.15 - 3.1;
 % % Linear interpolation for a sweep angle of Lambda.
-% e = e_straight + (e_swept - e_straight)/30 * Lambda;
+% e = e_straight + (e_swept - e_straight)/30 * Wing.sweep;
 
 % Estimation of the drag coefficient.
-Cd = Cd_0 + Cl^2 / (e * pi * AR);
+Cd = Wing.CD_0 + Wing.CL_cr^2 / (Wing.e * pi * Wing.AR);
 
 % Thrust at cruise must equal the drag [N].
-F_cruise = 0.5 * rho * V_cruise^2 * S * Cd;
+F_cr = 0.5 * C.rho_cr * C.V_cr^2 * Wing.S * Cd;
 
 %% Cruise thrust to uninstalled thrust.
 % The uninstalled thrust corresponds to the thrust measured in lab
 % conditions by the manufacturers.
 % WARN: conditions assumed below can depend on the manufacturer!
-
-% Lab flow conditions: assume sea level.
-h_sl = 0;                               % Altitude (sea level) [m].
-[rho_sl, p_sl, T_sl, a_sl] = ISA(h_sl); % Fluid properties at sea level. See ISA.m
 
 % Thrust at sea level [N].
 % Actually there is a causal dilemma: we want to estimate the equivalent
@@ -133,13 +101,13 @@ h_sl = 0;                               % Altitude (sea level) [m].
 % Teams>Propulsion>Files>Sources>Bartel-SFC_Calculations.pdf (page 5)
 BPR = engine.BPR;
 G = engine.G;
-A = -0.4327 * (p/p_sl)^2 + 1.3855 * p/p_sl + 0.0472;
-X =  0.1377 * (p/p_sl)^2 - 0.4374 * p/p_sl + 1.3003;
-Z =  0.9106 * (p/p_sl)^2 - 1.7736 * p/p_sl + 1.8697;
-F_sl = F_cruise / ( ...
-	  A ...
-	- Z * p/p_sl * (0.377*(1+BPR)*M_cruise) / sqrt((1+0.82*BPR)*G) ...
-	+ X * p/p_sl * (0.23+0.19*sqrt(BPR)) * M_cruise^2);
+A = -0.4327 * (C.p_cr/C.p_sl)^2 + 1.3855 * C.p_cr/C.p_sl + 0.0472;
+X =  0.1377 * (C.p_cr/C.p_sl)^2 - 0.4374 * C.p_cr/C.p_sl + 1.3003;
+Z =  0.9106 * (C.p_cr/C.p_sl)^2 - 1.7736 * C.p_cr/C.p_sl + 1.8697;
+cr_over_sl = A ...
+	- Z * C.p_cr/C.p_sl * (0.377*(1+BPR)*C.M_cr) / sqrt((1+0.82*BPR)*G) ...
+	+ X * C.p_cr/C.p_sl * (0.23+0.19*sqrt(BPR)) * C.M_cr^2;
+F_sl = F_cr / cr_over_sl;
 
 % Installed thrust [N].
 % Take a safety of around 20% more (according to T. Lambert).
@@ -149,14 +117,14 @@ safety_thrust = 0.2;
 F_installed = F_sl * (1 + safety_thrust);
 
 % Thrust to weight ratio.
-% The MTOW is conventionnaly expressed in [kg] and thus need to be
+% The MTOW is conventionally expressed in [kg] and thus need to be
 % converted in [N].
-MTOW_force = MTOW * g;
+MTOW_force = Plane.MTOW * C.g;
 TW_ratio = F_installed / MTOW_force;
 
 % Uninstalled thrust [N].
 % Lab geometrical conditions: assume optimistic configuration.
-% We sould take into account the difference between the lab
+% We should take into account the difference between the lab
 % configuration and the actual placement of the engine on the plane:
 % things like air duct and influence of wing/fuselage decrease the value
 % of the installed thrust. Installed thrust is typically 4-8% lower than
@@ -168,6 +136,25 @@ F_uninstalled = F_installed / (1 - install_loss);
 assert(engine.Thrust >= F_uninstalled, ...
 	"Thrust for the selected engine is too low");
 
+%% Design cruise Mach and design dive Mach.
+% The design cruise Mach is defined as the Mach number obtained at
+% maximum engine thrust, in cruising conditions.
+% The design dive Mach can be calculated as 1.07 times the design Mach.
+% Aircraft Structures>lesson 1>slides 7 and 11.
+
+% Maximum thrust at cruise [N].
+% We just have to revert steps of the preceding section, given the
+% uninstalled thrust of the selected engine.
+F_c = engine.Thrust * (1 - install_loss) / (1 + safety_thrust) * cr_over_sl;
+
+% Design cruise speed [m/s].
+% Obtained through the thrust-drag equality.
+V_c = sqrt(F_c / (0.5 * C.rho_cr * Wing.S * Cd));
+
+% Design cruise and dive mach numbers.
+M_c = V_c / C.a_cr;
+M_d = 1.07 * M_c;
+
 %% Fuel weight estimation.
 % Teams>General>Books>Raymer (page 149)
 
@@ -175,8 +162,8 @@ assert(engine.Thrust >= F_uninstalled, ...
 % Teams>Propulsion>Files>Sources>Bartel-SFC_Calculations.pdf (page 12)
 % Teams>Propulsion>Files>Sources>Nihad-Turbofans.pdf (page 33)
 n = engine.n;
-SFC_cruise = engine.SFC * sqrt(T/T_sl) * (1 + M_cruise)^n;
-SFC_loiter = engine.SFC * sqrt(T/T_sl) * (1 + M_loiter)^n;
+SFC_cruise = engine.SFC * sqrt(C.T_cr/C.T_sl) * (1 + C.M_cr)^n;
+SFC_loiter = engine.SFC * sqrt(C.T_cr/C.T_sl) * (1 + C.M_loiter)^n;
 
 % Take into account takeoff and landing through a safety factor.
 % According to T. Lambert, no need to worry too much about takeoff and
@@ -191,19 +178,19 @@ safety_bad_engine = 5e-2;
 safety_trapped_fuel = 1e-2;
 
 % Estimation of the thrust needed at loiter [N].
-F_loiter = 0.5 * rho * V_loiter^2 * S * Cd;
+F_loiter = 0.5 * C.rho_cr * C.V_loiter^2 * Wing.S * Cd;
 
 % Summing amout of fuel required for all the mission steps [kg].
 W_fuel = ...
 	  (1+safety_takeoff_landing) ...
 	* (1+safety_bad_engine+safety_trapped_fuel) ...
-	* (  F_loiter * SFC_loiter * t_loiter1 ...
-	   + F_loiter * SFC_loiter * t_loiter2 ...
-	   + F_cruise * SFC_cruise * (eg_range/V_cruise) ...
-	   + F_cruise * SFC_cruise * (ig_range/V_cruise));
+	* (  F_loiter * SFC_loiter * C.t_loiter_search ...
+	   + F_loiter * SFC_loiter * C.t_loiter_landing ...
+	   + F_cr * SFC_cruise * (C.range_egress/C.V_cr) ...
+	   + F_cr * SFC_cruise * (C.range_ingress/C.V_cr));
 
 % Fuel weight ratio.
-FW_ratio = W_fuel / MTOW;
+FW_ratio = W_fuel / Plane.MTOW;
 
 % Rough idea of the jet-A fuel density [kg/m³].
 % Wikipedia>"Jet fuel"
@@ -211,3 +198,27 @@ rho_fuel = 820;
 
 % Fuel tank volume [m³].
 vol_tank = W_fuel / rho_fuel;
+
+%% Update values in data.mat
+
+% Pick the relevant data to save, under the `Propu` structure.
+Propu.engine_table  = engine_table;
+Propu.engine        = engine;
+Propu.T_cr          = F_cr;
+Propu.T_sl          = F_sl;
+Propu.T_installed   = F_installed;
+Propu.T_uninstalled = F_uninstalled;
+Propu.TW_ratio      = TW_ratio;
+Propu.T_c           = F_c;
+Propu.M_c           = M_c;
+Propu.M_d           = M_d;
+Propu.SFC_cruise    = SFC_cruise;
+Propu.SFC_loiter    = SFC_loiter;
+Propu.W_fuel        = W_fuel;
+Propu.FW_ratio      = FW_ratio;
+Propu.vol_tank      = vol_tank;
+
+% Write in data.mat.
+save(fullfile(pwd, "../data.mat"), "Propu", "-append")
+
+end
