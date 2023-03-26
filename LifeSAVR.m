@@ -1,5 +1,5 @@
 % TODO:
-% - Add flexibility options.
+% - Implement opts
 
 function LifeSAVR(opts)
 % LIFESAVR  triggers all the code of the project.
@@ -45,9 +45,9 @@ end
 % Propulsion.
 propulsion();
 % pr_diagram();
-% 
-% % Structure.
-% flight_envelope();
+
+% Structure.
+flight_envelope();
 % loads_aero();
 % loads_structural();
 
