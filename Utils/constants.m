@@ -16,6 +16,7 @@ mph2kmh  = 1609.344;     % Miles per hour  ->  kilometers per hour.
 mph2ms   = 0.44704;      % Miles per hour  ->  meters per second.
 kn2kmh   = 1.852;        % Knot            ->  kilometers per hour.
 kn2ms    = 0.514444;     % Knot            ->  meters per second.
+slug2kg  = 14.59390;     % Slug            ->  kilogram.
 lb2kg    = 0.45359237;   % Pound mass      ->  kilogram.
 lbf2N    = 4.448222;     % Pound force     ->  newton.
 usgal2m3 = 3.785411784;  % US gallon       ->  cubic meter.
