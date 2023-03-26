@@ -1,7 +1,7 @@
 % TODO:
 % - Add flexibility options.
 
-function LifeSAVR()
+function LifeSAVR(opts)
 % LIFESAVR  triggers all the code of the project.
 %
 % Parameter:
@@ -10,18 +10,48 @@ function LifeSAVR()
 %		'w' -> Write data in external file.
 %		'i' -> use the imperial system of units (abbr. ISoU).
 
-%% Update constants and data.
+%% Set path and global MAT files
 
-run Utils\constants.m
-run Utils\data.m
+% Find the root directory of the project.
+root_dir = fileparts(mfilename('fullpath'));
 
-%% Execute the code.
+% Add resursively sub-directories in the Matlab path.
+addpath(genpath(fullfile(root_dir, "Utils")));
+addpath(genpath(fullfile(root_dir, "Propulsion")));
+addpath(genpath(fullfile(root_dir, "Structure")));
 
-run Propulsion\propulsion.m  % -> data.m>Propu
-run Propulsion\pr_diagram.m
+% Initialize MAT files.
+constants();
+data();
 
-run Structure\flight_envelope.m   % -> data.m>Struct
-run Structure\loads_aero.m        % -> data.m>Struct
-run Structure\loads_structural.m  % -> data.m>Struct
+%% Options setting
+
+% Option defaults: generate the plots, in ISoU.
+if ~nargin
+		opts = 'pi';
+end
+
+% Determine if the imperial system of units is desired.
+% TODO: see if it relly needs to be checked in this scope.
+if contains(opts, 'i')
+	ISoU = true;
+else
+	ISoU = false;
+end
+
+%% Execute the code
+% TODO: good idea to tell which function write in  which MAT files.
+
+% Propulsion.
+propulsion();
+% pr_diagram();
+% 
+% % Structure.
+% flight_envelope();
+% loads_aero();
+% loads_structural();
+
+% Debug print.
+disp("exc OK");
 
 end

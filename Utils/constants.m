@@ -1,4 +1,8 @@
-% CONSTANTS  Hold the constant quantities used thourghout the project.
+function constants
+% CONSTANTS  Constant quantities used thourghout the project.
+%
+% This function defines the constants used throughout the project, and
+% write them in `constants.mat`.
 
 clear;
 
@@ -50,15 +54,21 @@ K_safety           = 1.5;          % KPP_22 Structural safety factor.
 
 % Quantities directly derived from the KPPs.
 
-h_cr     = 30e3 * ft2m;   % Cruise altitude [m].
+h_cr     = 30e3 * ft2m;                  % Cruise altitude [m].
 [rho_cr, p_cr, T_cr, a_cr] = ISA(h_cr);  % Fluid properties at cruise altitude. See Utils/ISA.m
-M_cr     = M_ingress;     % There's actually no difference bw ingress and egress.
-V_cr     = M_cr * a_cr;   % TAS at cruise [m/s].
-M_loiter = 0.7;           % Mach number during loiter.
-V_loiter = M_loiter * a;  % TAS at loiter [m/s].
-V_dash   = M_dash * a;    % TAS at dash   [m/s].
+M_cr     = M_ingress;                    % There's actually no difference bw ingress and egress.
+V_cr     = M_cr * a_cr;                  % TAS at cruise [m/s].
+M_loiter = 0.7;                          % Mach number during loiter.
+V_loiter = M_loiter * a_cr;              % TAS at loiter [m/s].
+V_dash   = M_dash * a_cr;                % TAS at dash   [m/s].
 % TODO: calculate limit and ultimate load factors.
 
 %% Save data into constants.mat
 
-save("../constants.mat")
+% Directory where the present file lies.
+file_dir = fileparts(mfilename("fullpath"));
+
+% Save data in constants.mat, which lies in the root directory.
+save(fullfile(file_dir, "../constants.mat"));
+
+end
