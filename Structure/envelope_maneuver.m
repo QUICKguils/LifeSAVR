@@ -1,12 +1,10 @@
-% Last update: 27/02/2023
-
-% TODO::
+% TODO:
 % - Reload data from propulsion.m
 % - Something may be wrong with the chosen load factor limit. Recheck the KPP.
 % - Recheck the gust envelope: it should not be contained in the maneuver
 %   envelope !
 
-function maneuver_envelope(h, opts)
+function envelope_maneuver(h, opts)
 % MANEUVER_ENVELOPE  Load_factor-velocity dependency.
 %
 % Parameter:
@@ -20,6 +18,12 @@ function maneuver_envelope(h, opts)
 close;
 
 %% Data.
+
+% Directory where the present file lies.
+file_dir = fileparts(mfilename("fullpath"));
+
+% ISA function.
+addpath(genpath(fullfile(file_dir, "Utils")));
 
 % Conversion factors.
 ft2m   = 0.3048;  % Foot -> meter.
@@ -44,7 +48,7 @@ g = 9.80665;                 % Gravitational acceleration [m/s²].
 n_up           = 3;       % KPP 18 - Upward flight limit load factor.
 n_dw           = -1.5;    % KPP 19 - Downward flight limit load factor.
 M_cruise       = 0.86;    % KPP 03 - Mach number during cruise.
-[rho, ~, ~, a] = ISA(h);  % Air speed at cruise altitude [m/s].
+[rho, ~, ~, a] = ISA(h);  % Air speed at desired altitude [m/s].
 
 % Quantities retrieved from other parts.
 CL_max = 1.493;  % Maximum lift coefficient.     - wing
@@ -72,6 +76,8 @@ n1 = 0;
 n2 = n_up;
 n12 = n1 + linspace(0, 1, 30).^2 * (n2 - n1);  % Quadratically distributed.
 V12 = arrayfun(@v_max_lift, n12);
+disp(n12);
+disp(V12);
 
 % Maximum upward load factor.
 V3 = V_D;

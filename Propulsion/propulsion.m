@@ -23,8 +23,6 @@
 %   just put a different engine.
 
 % TODO:
-% - use data gathered in Utils/constants.m
-% - use sweep angle at LE in the estimation of e.
 % - Check the 20% and the 8% factor: 20% seems too high. Provide refs.
 % - Think more about the air duct. What size, how to beneficiate from
 %   the BL of the nose/fuselage. See lesson 5 (Koen).
@@ -34,13 +32,16 @@
 function propulsion
 % PROPULSION  Calculations related to the propulsion.
 
-%% Data.
+%% Imports
 
-% Constant quantities.
-C = load(fullfile(pwd, "../constants.mat"));
+% Directory where the present file lies.
+file_dir = fileparts(mfilename("fullpath"));
 
-% Aircraft data.
-load(fullfile(pwd, "../data.mat"), "Wing", "Plane");
+% Constants and aircraft data.
+C = load(fullfile(file_dir, "../constants.mat"));
+load(fullfile(file_dir, "../data.mat"), "Wing", "Plane");
+
+%% Engine selection
 
 % Selected engine data.
 % Thrust, SFC and BPR data are gathered by looking at either the
@@ -68,7 +69,7 @@ engine_table("HF120",       :) = {"GE Honda",               9.1e3,   1.99e-5, 2.
 % Select one engine.
 engine = table2struct(engine_table("FJ44-4A", :));
 
-%% Estimation of the thrust needed for dash speed.
+%% Estimation of the thrust needed for dash speed
 % Slides 27 and following, lesson 2.
 
 % Estimation of e is now calculated in the wing part.
@@ -85,7 +86,7 @@ Cd = Wing.CD_0 + Wing.CL_cr^2 / (Wing.e * pi * Wing.AR);
 % Thrust at cruise must equal the drag [N].
 F_cr = 0.5 * C.rho_cr * C.V_cr^2 * Wing.S * Cd;
 
-%% Cruise thrust to uninstalled thrust.
+%% Cruise thrust to uninstalled thrust
 % The uninstalled thrust corresponds to the thrust measured in lab
 % conditions by the manufacturers.
 % WARN: conditions assumed below can depend on the manufacturer!
@@ -136,7 +137,7 @@ F_uninstalled = F_installed / (1 - install_loss);
 assert(engine.Thrust >= F_uninstalled, ...
 	"Thrust for the selected engine is too low");
 
-%% Design cruise Mach and design dive Mach.
+%% Design cruise Mach and design dive Mach
 % The design cruise Mach is defined as the Mach number obtained at
 % maximum engine thrust, in cruising conditions.
 % The design dive Mach can be calculated as 1.07 times the design Mach.
@@ -155,7 +156,7 @@ V_c = sqrt(F_c / (0.5 * C.rho_cr * Wing.S * Cd));
 M_c = V_c / C.a_cr;
 M_d = 1.07 * M_c;
 
-%% Fuel weight estimation.
+%% Fuel weight estimation
 % Teams>General>Books>Raymer (page 149)
 
 % Uninstalled SFC to cruise SFC.
@@ -218,7 +219,7 @@ Propu.W_fuel        = W_fuel;
 Propu.FW_ratio      = FW_ratio;
 Propu.vol_tank      = vol_tank;
 
-% Write in data.mat.
-save(fullfile(pwd, "../data.mat"), "Propu", "-append")
+% Save data in data.mat, which lies in the root directory.
+save(fullfile(file_dir, "../data.mat"), "Propu", "-append");
 
 end
