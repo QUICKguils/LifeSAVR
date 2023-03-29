@@ -1,11 +1,9 @@
 function flight_envelope(h, opts)
 % FLIGHT_ENVELOPE
 %
-% TODO: write convention for flight points naming.
-%
 % Parameter:
 %	alt: double
-%	  Altitude at which the maneuver envelope is desired, in meter.
+%	  Altitude at which the flight envelope is desired, in meter.
 %	opts: char {'p', 'w'}, optional
 %	  'p' -> Enable plots creation.
 %	  'w' -> Write plotting data in external file.
@@ -230,7 +228,7 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 		%   calculated. This function just nicely pack them in a dictionary.
 
 		EAS_S = tas_max_lift(1) * TAS2EAS;  % Stall speed at n = 1 (cruise).
-		EAS_A = ME.CP{2, 'EAS'};            % Stall speed at n = n_up.
+		EAS_A = ME.CP{1, 'EAS'};            % Stall speed at n = n_up.
 		EAS_B = GE.CP{2, 'EAS'};            % Stall speed at n = ng_c_plus.
 		EAS_C = V_c * TAS2EAS;              % Design cruise speed.
 		EAS_D = V_d * TAS2EAS;              % Design dive speed.
