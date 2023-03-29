@@ -26,8 +26,8 @@ theta_dd_add = 1.0472;  % Additional pitch acceleration [rad/s²].
 psi_max      = 15;      % Maximum yaw angle allowed [°].
 
 % Critical points of the flight envelope.
-V = Envelope.CP.n;
-n = Envelope.CP.EAS;
+n = D.FE.CP{:, 'n'};
+V = D.FE.CP{:, 'EAS'};
 
 %% Aircraft loads.
 
