@@ -62,7 +62,6 @@ V_cr     = M_cr * a_cr;                  % TAS at cruise [m/s].
 M_loiter = 0.7;                          % Mach number during loiter.
 V_loiter = M_loiter * a_cr;              % TAS at loiter [m/s].
 V_dash   = M_dash * a_cr;                % TAS at dash   [m/s].
-% TODO: calculate limit and ultimate load factors.
 
 %% Save data into constants.mat
 

@@ -5,10 +5,9 @@ function LifeSAVR(opts)
 % LIFESAVR  triggers all the code of the project.
 %
 % Parameter:
-%	opts: char {'p', 'w', 'i'}, optional
+%	opts: char {'p', 'w'}, optional
 %		'p' -> Enable plots creation.
-%		'w' -> Write data in external file.
-%		'i' -> use the imperial system of units (abbr. ISoU).
+%		'w' -> Write plotting data in external file.
 
 %% Set path and global MAT files
 
@@ -28,26 +27,21 @@ data();
 
 % Option defaults: generate the plots, in ISoU.
 if ~nargin
-		opts = 'pi';
-end
-
-% Determine if the imperial system of units is desired.
-% TODO: see if it relly needs to be checked in this scope.
-if contains(opts, 'i')
-	ISoU = true;
-else
-	ISoU = false;
+		opts = 'p';
 end
 
 %% Execute the code
 % TODO: good idea to tell which function write in  which MAT files.
+
+% Load project constants.
+C = load(fullfile(root_dir, "constants.mat"));
 
 % Propulsion.
 propulsion();
 % pr_diagram();
 
 % Structure.
-flight_envelope();
+flight_envelope(C.h_cr, opts);
 % loads_aero();
 % loads_structural();
 

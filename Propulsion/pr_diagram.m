@@ -1,5 +1,3 @@
-% Last update: 27/02/2023
-
 % NOTE:
 % - This file is based on slides 78-83 lesson 5 (Noels, coneptual design).
 % - Actually, is exists an infinite number of payload-range diagram. We
@@ -11,6 +9,8 @@
 %   take into account this additional fuel capacity).
 
 % TODO:
+% - DO A TRADEOFF: make a bigger reservoir than necessary, to do a
+% payload/fuel tradeoff.
 % - Wait for the optimal cruise to plot the max range diagram.
 % - Recheck dry weight and fuel (volatile) weight.
 % - reload data from propulsion.m. Engine has changed.

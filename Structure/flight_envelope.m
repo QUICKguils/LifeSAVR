@@ -1,8 +1,3 @@
-% TODO:
-% - Reload data from propulsion.m
-% - Something may be wrong with the chosen load factor limit. Recheck the KPP.
-% - Recheck the gust envelope.
-
 function flight_envelope(h, opts)
 % FLIGHT_ENVELOPE
 %
@@ -11,10 +6,9 @@ function flight_envelope(h, opts)
 % Parameter:
 %	alt: double
 %	  Altitude at which the maneuver envelope is desired, in meter.
-%	opts: char {'p', 'w', 'i'}, optional
+%	opts: char {'p', 'w'}, optional
 %	  'p' -> Enable plots creation.
-%	  'w' -> Write data in external file.
-%	  'i' -> use the imperial system of units (abbr. ISoU).
+%	  'w' -> Write plotting data in external file.
 
 %% Imports
 
@@ -32,38 +26,34 @@ addpath(genpath(fullfile(file_dir, "../Utils")));
 
 % Option defaults:
 % - Default altitude is the cruise altitude.
-% - Yield the results in ISoU, and generate the plot.
+% - Generate the plot.
 switch nargin
 	case 0
 		h  = C.h_cr;
-		opts = 'pi';
+		opts = 'p';
 	case 1
-		opts = 'pi';
+		opts = 'p';
 end
-
-% Determine if the imperial system of units is desired.
-if contains(opts, 'i'); ISoU = true; else; ISoU = false; end
 
 %% Main solve
 
-% Air properties at desired altitude.
-[rho, ~, ~, a] = ISA(h);
+% Function global variables.
+[rho, ~, ~, a] = ISA(h);       % Air properties at desired altitude.
+TAS2EAS = sqrt(rho/C.rho_sl);  % Conversion from true airspeed to equivalent airspeed.
+V_c = D.Propu.M_c * a;         % Design cruise speed [m/s].
+V_d = D.Propu.M_d * a;         % Design dive   speed [m/s].
 
-% Conversion of true airspeed (TAS) to equivalent airspeed (EAS).
-TAS2EAS = sqrt(rho/C.rho_sl);
+% Build the flight envelope.
+% In our case, the GE is entirely contained in the ME, so FE = ME.
+ME = maneuver_envelope();
+GE = gust_envelope();
 
-% Design cruise speed and design dive speed [m/s].
-V_c = D.Propu.M_c * a;
-V_d = D.Propu.M_d * a;
-
-% Find the flight envelope points.
-Man = maneuver_envelope();
-Gust = gust_envelope();
-% Flight = flight_envelope(Man, Gust);
+% Retrieve relevant design speeds.
+Speeds = design_EAS(ME, GE);
 
 % Plot the curves.
 if contains(opts, 'p')
-	plot_envelope(Man, Gust);
+	plot_envelope(ME, GE);
 end
 
 % % Write the data to external file.
@@ -71,160 +61,213 @@ end
 % 	write_ext();
 % end
 
+% Collect the relevant quantities to save, in a structure named `FE`.
+FE.contour = ME.contour;
+FE.CP      = ME.CP;
+FE.speed   = Speeds;
+
+% Save FE in data.mat, which lies in the root directory.
+save(fullfile(file_dir, "../data.mat"), "FE", "-append");
+
+%% Stall line points
+
+	function TAS = tas_max_lift(n)
+		% N_MAX_LIFT  True airspeed at max lift, for the given load factor.
+
+		TAS = sqrt(2 * abs(n) * D.Plane.MTOW * C.g / (rho * D.Wing.S * D.Wing.CL_max));
+	end
+
 %% Maveuver envelope
 
-	function Maneuver = maneuver_envelope()
-		% MANEUVER_ENVELOPE  Compute the maneuver envelope points.
-		%
+	function ME = maneuver_envelope()
+		% MANEUVER_ENVELOPE  Build the maneuver envelope.
+
 		% In this function, we decided to label all the six edges of the
 		% maneuver envelope with numeric indexes ranging from 1 to 6. The
 		% numbering starts at flight condition (0 m/s; 0 g), and cycles
 		% clockwise.
 
-		% Maximum positive lift.
-		n1 = 0;
-		n2 = C.n_up;
-		% Quadratically distributed, to have smooth graph with a little
-		% amount of points.
-		n12 = n1 + linspace(0, 1, 30).^2 * (n2 - n1);
-		V12 = arrayfun(@v_max_lift, n12);
+		% Positive stall line.
+		n_1    = 0;
+		n_2    = C.n_up;
+		n_12   = n_1 + linspace(0, 1, 30).^2 * (n_2 - n_1);  % Quadratically distributed.
+		TAS_12 = arrayfun(@tas_max_lift, n_12);
 
-		% Maximum upward load factor.
-		V3 = V_d;
-		n3 = C.n_up;
+		% Dive speed, maximum upward load factor.
+		n_3   = C.n_up;
+		TAS_3 = V_d;
 
 		% Dive speed, free fall.
-		V4 = V_d;
-		n4 = 0;
+		n_4   = 0;
+		TAS_4 = V_d;
 
 		% Weird interpolation.
-		n5 = C.n_down;
-		V5 = interp1([n4, -1], [V4, V_c], n5, "linear", "extrap");
+		n_5   = C.n_down;
+		TAS_5 = interp1([n_4, -1], [TAS_4, V_c], n_5, "linear", "extrap");
 
-		% Maximum negative lift.
-		n6 = C.n_down;
-		n61 = n1 + linspace(1, 0, 30).^2 * (n6 - n1);
-		V61 = arrayfun(@v_max_lift, n61);
+		% Negative stall line.
+		n_6    = C.n_down;
+		n_61   = n_1 + linspace(1, 0, 30).^2 * (n_6 - n_1);  % Quadratically distributed.
+		TAS_61 = arrayfun(@tas_max_lift, n_61);
 
-		% Build Maneuver structure.
-		% - Envelope: the envelope operating points, including stall
-		%   lines. Mainly useful for plotting.
-		% - OP: contains only the envelope operating points. 
-		Maneuver.env.n   = [n12, n3, n4, n5, n61];
-		Maneuver.env.EAS = [V12, V3, V4, V5, V61] .* TAS2EAS;
-		Maneuver.OP.n    = [n1,      n2,       n3, n4, n5, n6     ];
-		Maneuver.OP.EAS  = [V12(1),  V12(end), V3, V4, V5, V61(1) ] .* TAS2EAS;
+		% Maneuver envelope structure.
+		% - contour: sample of envelope contour points. Especially useful for plotting.
+		% - CP:      envelope critical points, i.e. points 2 to 6.
+		ME.contour = table(...
+			[n_12,   n_3,   n_4,   n_5,   n_61  ]', ...
+			[TAS_12, TAS_3, TAS_4, TAS_5, TAS_61]' .* TAS2EAS, ...
+			'VariableNames', {'n', 'EAS'});
+		ME.CP = table(...
+			[n_2,         n_3,   n_4,   n_5,   n_6      ]', ...
+			[TAS_12(end), TAS_3, TAS_4, TAS_5, TAS_61(1)]' .* TAS2EAS, ...
+			'VariableNames', {'n', 'EAS'});
 	end
 
 %% Gust envelope
 
-	function Gust = gust_envelope()
-		% GUST_ENVELOPE  Build the gust lines functions.
-		%
-		% Reference values and formulae used to build the gust lines
-		% can be found on:
-		% www.ecfr.gov/on/2017-08-29/title-14/chapter-I/subchapter-C/part-23/subpart-C/
+	function GE = gust_envelope()
+		% GUST_ENVELOPE  Build the gust envelope.
 
-		% WARN: this function sporadically works with ISoU.
-		W_ISoU   = D.Plane.MTOW * C.g / C.lbf2N;  % [lbf]
-		rho_ISoU = rho / C.slug2kg * C.ft2m^3;    % [slug/ft³]
-		mac_ISoU = D.Wing.mac / C.ft2m;           % [ft]
-		g_ISoU   = C.g / C.ft2m;                  % [ft/s²]
-		S_ISoU   = D.Wing.S / C.ft2m^2;           % [ft²]
-		h_ISoU   = h / C.ft2m;                    % [ft]
+		% 1. Gust lines.
+		%
+		% NOTE:
+		% The computed gust lines should be more open that what is currently
+		% obtained, leading to a gust envelope that is not entirely contained in
+		% the maneuver envelope. However, calculations in this section has been
+		% revised again and again, both with imperial and SI units. Reference
+		% formulae can be found at:
+		% www.ecfr.gov/on/2017-08-29/title-14/chapter-I/subchapter-C/part-23/subpart-C/
 
 		% 14 CFR 23 recomandations (before 29-08-2017) for the gust values.
 		Ue_c_alt = [50, 50,   25];    % [ft/s]
 		Ue_d_alt = [25, 25,   12.5];  % [ft/s]
 		gust_alt = [0,  20e3, 50e3];  % [ft]
-		% Interpolate the gust speeds Ue for the desired altitude h_ISoU.
-		Ue_c = interp1(gust_alt, Ue_c_alt, h_ISoU, "linear");
-		Ue_d = interp1(gust_alt, Ue_d_alt, h_ISoU, "linear");
+		% Interpolate the gust speeds Ue for the desired altitude h.
+		Ue_c = interp1(gust_alt, Ue_c_alt, h/C.ft2m, "linear");
+		Ue_d = interp1(gust_alt, Ue_d_alt, h/C.ft2m, "linear");
 
-		% Airplaine weight ratio and gust alleviation factor.
+ 		% Airplaine weight ratio and gust alleviation factor.
 		% FIX: we should use the CL_alpha of the plane, not the wing.
-		mu = 2 * W_ISoU / (rho_ISoU * D.Wing.CL_alpha * mac_ISoU * g_ISoU * S_ISoU);
+		mu = 2 * D.Plane.MTOW * C.g / (rho * D.Wing.CL_alpha * D.Wing.mac * C.g * D.Wing.S);
 		F = 0.88 * mu / (5.3 + mu);
 
 		% Positive and negative gust lines at Vc and Vd.
-		% WARN: unit: Ve is the airplane EAS, in knots.
-		ng_c_plus  = @(Ve) 1 + F*D.Wing.CL_alpha*S_ISoU*Ue_c*Ve / (498 * W_ISoU);
-		ng_c_minus = @(Ve) 1 - F*D.Wing.CL_alpha*S_ISoU*Ue_c*Ve / (498 * W_ISoU);
-		ng_d_plus  = @(Ve) 1 + F*D.Wing.CL_alpha*S_ISoU*Ue_d*Ve / (498 * W_ISoU);
-		ng_d_minus = @(Ve) 1 - F*D.Wing.CL_alpha*S_ISoU*Ue_d*Ve / (498 * W_ISoU);
+		% EAS in expressed in [m/s].
+		ng_c_plus_EAS  = @(EAS) 1 + F*C.rho_sl*D.Wing.S*D.Wing.CL_alpha*(Ue_c*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
+		ng_c_minus_EAS = @(EAS) 1 - F*C.rho_sl*D.Wing.S*D.Wing.CL_alpha*(Ue_c*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
+		ng_d_plus_EAS  = @(EAS) 1 + F*C.rho_sl*D.Wing.S*D.Wing.CL_alpha*(Ue_d*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
+ 		ng_d_minus_EAS = @(EAS) 1 - F*C.rho_sl*D.Wing.S*D.Wing.CL_alpha*(Ue_d*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
+		% Convert the functions argument, to work with TAS.
+		ng_c_plus_TAS  = @(TAS) ng_c_plus_EAS(TAS  * TAS2EAS);
+		ng_c_minus_TAS = @(TAS) ng_c_minus_EAS(TAS * TAS2EAS);
+		ng_d_plus_TAS  = @(TAS) ng_d_plus_EAS(TAS  * TAS2EAS);
+ 		ng_d_minus_TAS = @(TAS) ng_d_minus_EAS(TAS * TAS2EAS);
 
-		% The commented code below computes the gust lines with the SI
-		% units. Unsurprizingly, wz obtain the same results.
+		% 2. Gust envelope.
 		%
- 		% % Airplaine weight ratio and gust alleviation factor.
-		% % FIX: we should use the CL_alpha of the plane, not the wing.
-		% mu = 2 * D.Plane.MTOW * C.g / (rho * D.Wing.CL_alpha * D.Wing.mac * C.g * D.Wing.S);
-		% F = 0.88 * mu / (5.3 + mu);
-		% % Positive and negative gust lines at Vc and Vd.
-		% ng_c_plus  = @(Ve) 1 + F*C.rho_sl*D.Wing.S*D.Wing.CL_alpha*(Ue_c*C.ft2m)*(Ve*C.kn2ms) / (2*D.Plane.MTOW*C.g);
-		% ng_c_minus = @(Ve) 1 - F*C.rho_sl*D.Wing.S*D.Wing.CL_alpha*(Ue_c*C.ft2m)*(Ve*C.kn2ms) / (2*D.Plane.MTOW*C.g);
-		% ng_d_plus  = @(Ve) 1 + F*C.rho_sl*D.Wing.S*D.Wing.CL_alpha*(Ue_d*C.ft2m)*(Ve*C.kn2ms) / (2*D.Plane.MTOW*C.g);
- 		% ng_d_minus = @(Ve) 1 - F*C.rho_sl*D.Wing.S*D.Wing.CL_alpha*(Ue_d*C.ft2m)*(Ve*C.kn2ms) / (2*D.Plane.MTOW*C.g);
+		% In this function, we decided to label all the six edges of the gust
+		% envelope with numeric indexes ranging from 1 to 6. The numbering
+		% starts at the minimum speed edge, and cycles clockwise.
 
-		% Build Gust structure.
-		Gust.ng_c_plus  = ng_c_plus;
-		Gust.ng_c_minus = ng_c_minus;
-		Gust.ng_d_plus  = ng_d_plus;
-		Gust.ng_d_minus = ng_d_minus;
-	end
+		% Declare symbolic variable for speed, to solve gust lines and stall
+		% lines intersections.
+		TAS = sym('TAS');
 
-%% Flight envelope
+		% Point 1: intersections of ng_c_minus with positive stall line.
+		TAS_1 = double(vpasolve(tas_max_lift(ng_c_minus_TAS(TAS)) == TAS));
+		n_1   = ng_c_minus_TAS(TAS_1);
+		
+		% Point 2: intersections of ng_c_plus with positive stall line.
+		TAS_2 = double(vpasolve(tas_max_lift(ng_c_plus_TAS(TAS)) == TAS));
+		n_2   = ng_c_plus_TAS(TAS_2);
 
-	function Flight = flight_envelope(Man, Gust)
-		% FLIGHT_ENVELOPE  Compute the flight envelope.
+		% Positive stall line.
+		n_12    = n_1 + linspace(0, 1, 30).^2 * (n_2 - n_1);  % Quadratically distributed.
+		TAS_12 = arrayfun(@tas_max_lift, n_12);
 
-		% Vs: intersection of stall line with n=1. 
+		% Point 3: positive V_c gust line at V_c.
+		TAS_3 = V_c;
+		n_3   = ng_c_plus_TAS(TAS_3);
 
-		% Va: intersection of stall line with n=C.n_up
-		% Vb: intersection of stall line with ng_c_plus
+		% Point 4: positive V_d gust line at V_d.
+		TAS_4 = V_d;
+		n_4   = ng_d_plus_TAS(TAS_4);
 
-	end
+		% Point 5: negative V_d gust line at V_d.
+		TAS_5 = V_d;
+		n_5   = ng_d_minus_TAS(TAS_5);
 
-%% Stall line points
+		% Point 6: negative V_c gust line at V_c.
+		TAS_6 = V_c;
+		n_6   = ng_c_minus_TAS(TAS_6);
 
-	function TAS = v_max_lift(n)
-		% N_MAX_LIFT  True airspeed at max lift, for the given load factor.
+		% 3. Gust envelope structure.
 		%
-		% Parameter:
-		%	n: double
-		%		Load factor.
-		TAS = sqrt(2 * abs(n) * D.Plane.MTOW * C.g / (rho * D.Wing.S * D.Wing.CL_max));
+		% - contour: sample of envelope contour points. Especially useful for plotting.
+		% - CP:      envelope critical points, i.e. points 1 to 6.
+		% - line:    gust lines function handles.
+
+		GE.contour = table(...
+			[n_12,   n_3,   n_4,   n_5,   n_6,   n_1  ]', ...
+			[TAS_12, TAS_3, TAS_4, TAS_5, TAS_6, TAS_1]' .* TAS2EAS, ...
+			'VariableNames', {'n', 'EAS'});
+		GE.CP = table(...
+			[n_1,   n_2,   n_3,   n_4,   n_5,   n_6  ]', ...
+			[TAS_1, TAS_2, TAS_3, TAS_4, TAS_5, TAS_6]' .* TAS2EAS, ...
+			'VariableNames', {'n', 'EAS'});
+		GE.line.ng_c_plus  = ng_c_plus_EAS;
+		GE.line.ng_c_minus = ng_c_minus_EAS;
+		GE.line.ng_d_plus  = ng_d_plus_EAS;
+		GE.line.ng_d_minus = ng_d_minus_EAS;
 	end
 
+%% Design speeds
+
+	function Speeds = design_EAS(ME, GE)
+		% DESIGN_SPEEDS  Retrieve the relevant design EAS.
+		%
+		%   All the design speeds returned by this function have already been
+		%   calculated. This function just nicely pack them in a dictionary.
+
+		EAS_S = tas_max_lift(1) * TAS2EAS;  % Stall speed at n = 1 (cruise).
+		EAS_A = ME.CP{2, 'EAS'};            % Stall speed at n = n_up.
+		EAS_B = GE.CP{2, 'EAS'};            % Stall speed at n = ng_c_plus.
+		EAS_C = V_c * TAS2EAS;              % Design cruise speed.
+		EAS_D = V_d * TAS2EAS;              % Design dive speed.
+
+		Speeds = dictionary(...
+			["S",   "A",   "B",   "C",   "D"], ...
+			[EAS_S, EAS_A, EAS_B, EAS_C, EAS_D]);
+	end
 %% Plot envelope
 
-	function plot_envelope(Man, Gust)
-		% PLOT_ENVELOPE
-
-		% Conversion in ISoU.
-		Man.env.EAS = Man.env.EAS   ./ C.kn2ms;
-		h_ISoU      = h             ./ C.ft2m;
-		V_c_KEAS    = V_c * TAS2EAS ./ C.kn2ms;
-		V_d_KEAS    = V_d * TAS2EAS ./ C.kn2ms;
+	function plot_envelope(ME, GE)
+		% PLOT_ENVELOPE  Plot the ME, GE and gust lines.
 
 		% Instantiate a figure object.
 		figure('WindowStyle', 'docked');
 		hold on;
 
+		% Colors taken from ULiège graphic chart.
+		TealDark   = [000, 112, 127] / 256;
+		OrangeDark = [240, 127, 060] / 256;
+		PurpleDark = [091, 037, 125] / 256;
+
 		% Plot maneuver envelope.
-		TealDark = [000, 112, 127]/256;  % Taken from ULiège graphic chart.
-		fill(Man.env.EAS, Man.env.n, TealDark, "FaceAlpha", 0.1);
+		fill(ME.contour{:, 'EAS'} ./ C.kn2ms, ME.contour{:, 'n'}, TealDark, "FaceAlpha", 0.1);
+
+		% Plot gust envelope.
+		fill(GE.contour{:, 'EAS'} ./ C.kn2ms, GE.contour{:, 'n'}, PurpleDark, "FaceAlpha", 0.1);
 
 		% Plot gust lines.
-		fplot(Gust.ng_c_plus,  [0, 1.05*V_d_KEAS], 'linestyle', '-.', 'Color', [0.9290 0.6940 0.1250]);
-		fplot(Gust.ng_c_minus, [0, 1.05*V_d_KEAS], 'linestyle', '-.', 'Color', [0.9290 0.6940 0.1250]);
-		fplot(Gust.ng_d_plus,  [0, 1.05*V_d_KEAS], 'linestyle', '-.', 'Color', [0.9290 0.6940 0.1250]);
-		fplot(Gust.ng_d_minus, [0, 1.05*V_d_KEAS], 'linestyle', '-.', 'Color', [0.9290 0.6940 0.1250]);
-
-		% Plot flight envelope.
+		v_lim = [0, 1.05 * V_d*TAS2EAS/C.kn2ms];
+		fplot(@(EAS_kn) GE.line.ng_c_plus(EAS_kn*C.kn2ms),  v_lim, 'linestyle', '-.', 'Color', OrangeDark);
+		fplot(@(EAS_kn) GE.line.ng_c_minus(EAS_kn*C.kn2ms), v_lim, 'linestyle', '-.', 'Color', OrangeDark);
+		fplot(@(EAS_kn) GE.line.ng_d_plus(EAS_kn*C.kn2ms),  v_lim, 'linestyle', '-.', 'Color', OrangeDark);
+		fplot(@(EAS_kn) GE.line.ng_d_minus(EAS_kn*C.kn2ms), v_lim, 'linestyle', '-.', 'Color', OrangeDark);
 
 		% Dress the plot.
-		title(strcat("Flight envelope (altitude of ", num2str(h_ISoU), " ft)"));
+		title(strcat("Flight envelope (altitude of ", num2str(h/C.ft2m), " ft)"));
 		xlabel("Equivalent airspeed (kn)");
 		ylabel("Load factor");
 		grid;

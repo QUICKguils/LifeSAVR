@@ -202,7 +202,7 @@ vol_tank = W_fuel / rho_fuel;
 
 %% Update values in data.mat
 
-% Pick the relevant data to save, under the `Propu` structure.
+% Collect the relevant quantities to save, in a structure named `Propu`.
 Propu.engine_table  = engine_table;
 Propu.engine        = engine;
 Propu.T_cr          = F_cr;
@@ -219,7 +219,7 @@ Propu.W_fuel        = W_fuel;
 Propu.FW_ratio      = FW_ratio;
 Propu.vol_tank      = vol_tank;
 
-% Save data in data.mat, which lies in the root directory.
+% Save Propu in data.mat, which lies in the root directory.
 save(fullfile(file_dir, "../data.mat"), "Propu", "-append");
 
 end
