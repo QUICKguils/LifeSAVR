@@ -8,8 +8,13 @@ function data
 % This file should not exist. It should be removed, once all the matlab
 % code is integrated and write themselves in data.mat.
 
-% Ensure that we only write the data defined here in constants.mat.
-clear;
+%% Imports
+
+% Directory where the present file lies.
+file_dir = fileparts(mfilename("fullpath"));
+
+% Constants.
+C = load(fullfile(file_dir, "../constants.mat"));
 
 %% Plane
 
@@ -138,12 +143,12 @@ Comp("Nose EO/IR/LIDAR",            :) = {100,         1,      0.5};
 Comp("Aft EO/IR/LIDAR",             :) = {50,          6.5,    0.5};
 Comp("Sensor growth",               :) = {15,          1.5,    0.5};
 
+% Convert weights from lb to kg.
+Comp(:, "Weight") = array2table(Comp{:, "Weight"} .* C.lb2kg);
+
 %% Write in data.mat
 
-% Directory where the present file lies.
-file_dir = fileparts(mfilename("fullpath"));
-
 % Save data in data.mat, which lies in the root directory.
-save(fullfile(file_dir, "../data.mat"));
+save(fullfile(file_dir, "../data.mat"), "Plane", "Wing", "Comp");
 
 end
