@@ -1,8 +1,8 @@
 function flight_envelope(h, opts)
 % FLIGHT_ENVELOPE
 %
-% Parameter:
-%	alt: double
+% Arguments:
+%	h: double
 %	  Altitude at which the flight envelope is desired, in meter.
 %	opts: char {'p', 'w'}, optional
 %	  'p' -> Enable plots creation.
