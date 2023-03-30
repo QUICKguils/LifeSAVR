@@ -4,18 +4,14 @@
 %   should determine two of them: one for maximum range (by choosing the
 %   optimal LD ratio), and the other for the maximum speed (ie for the
 %   mach 0.86).
-% - We should determine these graphs even for the fictious case of
-%   replacing the payload by the fuel. (but not redesign the tank to
-%   take into account this additional fuel capacity).
 
 % TODO:
 % - DO A TRADEOFF: make a bigger reservoir than necessary, to do a
-% payload/fuel tradeoff.
+%   payload/fuel tradeoff: show how the range evloves when we decide to
+%   replace some payload by additional fuel.
+% - Register stafety factors from propu in Propu structure.
 % - Wait for the optimal cruise to plot the max range diagram.
 % - Recheck dry weight and fuel (volatile) weight.
-% - reload data from propulsion.m. Engine has changed.
-% - Check if there are comment about this graph in the intermediate report
-%   correction.
 
 function pr_diagram(condition, opts)
 % PR_DIAGRAM  Plot of the payload-range diagram.
@@ -30,6 +26,17 @@ function pr_diagram(condition, opts)
 %		'w' -> Write data in external file.
 %		'i' -> use the imperial system of units (abbr. ISoU).
 
+%% Imports
+
+% Directory where the present file lies.
+file_dir = fileparts(mfilename("fullpath"));
+
+% Constants and aircraft data.
+C = load(fullfile(file_dir, "../constants.mat"));
+D = load(fullfile(file_dir, "../data.mat"));
+
+%% Options setting
+
 % Set argument defaults.
 switch nargin
 	case 0
@@ -42,40 +49,10 @@ end
 % Determine if the imperial system of units is desired.
 if contains(opts, 'i'); ISoU = true; else; ISoU = false; end
 
-close;
-
-%% Data.
-
-% Conversion factors.
-ft2m  = 0.3048;
-nmi2m = 1853.184;
-lb2kg = 0.45359237;
-
-% Physical constants.
-g = 9.80665;  % Gravitational acceleration [m/s²].
-
-% Quantities given or directly calculated from the statement.
-t_loiter     = 5 * 3600;      % Minimum loiter time [s].
-R_eg         = 2e3 * nmi2m;   % Minimum egress range [m].
-R_ig         = 850 * nmi2m;   % Minimum ingress range [m].
-M_cruise     = 0.86;          % Mach number during cruise.
-M_loiter     = 0.7;           % Mach number during loiter.
-h            = 30e3 * ft2m;   % Cruise altitude [m].
-[~, ~, ~, a] = ISA(h);        % Sound speed [m/s].
-V_loiter     = M_loiter * a;  % TAS at loiter [m/s].
-
-% Quantities retrieved from other parts.
-Cl         = 0.3;         % Coefficient of lift.         - wing
-Cd         = 0.0225;      % Coefficient of drag.         - propu
-SFC_cruise = 1.5188e-5;   % SFC at cruise [kg/(s*N)].    - propu
-SFC_loiter = 1.4520e-5;   % SFC at loiter [kg/(s*N)].    - propu
-W_MTO      = 3477;        % Maximum takeoff weight [kg]. - weight
-W_payload  = 300 * lb2kg; % Maximum payload weight [kg]. - weight
-
 %% Referral of all the weights.
 
-% Total fuel weight in the tank [kg]. - propu
-W_fuel_tot =  1315.3;
+% Total fuel weight in the tank [kg].
+W_fuel_tot = D.Propu.W_fuel;
 
 % Safety coefficients: account for extra fuel.
 safety_takeoff      = 1e-2;  % Taxi and take-off.                    - propu
@@ -89,8 +66,8 @@ W_fuel_trapped = W_fuel_tot * safety_trapped_fuel;
 
 % Fuel added for extra engine consumption can be seen as an increase in
 % the engine SFC.
-SFC_cruise = SFC_cruise * (1 + safety_bad_engine);
-SFC_loiter = SFC_loiter * (1 + safety_bad_engine);
+SFC_cruise = D.Propu.SFC_cruise * (1 + safety_bad_engine);
+SFC_loiter = D.Propu.SFC_loiter * (1 + safety_bad_engine);
 
 % Incemental weights [kg].
 % In cruise, fuel weight for take-off is gone.
@@ -102,9 +79,9 @@ W_fuel_vol = W_fuel - W_fuel_dry;
 
 % Total weights [kg].
 % empty weight of the plane.
-W_empty = W_MTO - W_fuel_tot - W_payload;
+W_empty = D.Plane.MTOW - W_fuel_tot - C.W_payload;
 % Weight of the plane with payload, without the fuel.
-W_nofuel = W_empty + W_payload;
+W_nofuel = W_empty + C.W_payload;
 % Dry weight of the plane: everithing except volatile fuel [kg].
 W_dry = W_nofuel + W_fuel_dry;
 
@@ -113,9 +90,9 @@ W_dry = W_nofuel + W_fuel_dry;
 % segments: ingress, loiter and egress.
 
 % Equivalent loiter range [m].
-R_loiter = t_loiter * V_loiter;
+R_loiter = C.t_loiter_search * C.V_loiter;
 % Total mission range [m].
-R_mission = R_ig + R_loiter + R_eg;
+R_mission = C.range_ingress + R_loiter + C.range_egress;
 fprintf("Total range of the mission: %d km.\n", R_mission/1e3);
 
 %% Payload-range for the desired fight condition.
@@ -124,11 +101,11 @@ fprintf("Total range of the mission: %d km.\n", R_mission/1e3);
 
 % Conversion in ISoU if desired.
 if ISoU
-	R          = R          ./ nmi2m;
-	W_empty_R  = W_empty_R  ./ lb2kg;
-	W_nofuel_R = W_nofuel_R ./ lb2kg;
-	W_dry_R    = W_dry_R    ./ lb2kg;
-	W_tot_R    = W_tot_R    ./ lb2kg;
+	R          = R          ./ C.nmi2m;
+	W_empty_R  = W_empty_R  ./ C.lb2kg;
+	W_nofuel_R = W_nofuel_R ./ C.lb2kg;
+	W_dry_R    = W_dry_R    ./ C.lb2kg;
+	W_tot_R    = W_tot_R    ./ C.lb2kg;
 end
 
 disp(R(end));
@@ -179,7 +156,7 @@ function R = range(SCF, eta_c, W_dry, W_vol)
 	% Return:
 	%	R: double
 	%	  Range of the plane [m].
-	R = 1/SCF * eta_c * a/g * log((W_dry+W_vol)/W_dry);
+	R = 1/SCF * eta_c * C.a_cr/C.g * log((W_dry+W_vol)/W_dry);
 end
 
 function [R, W_empty_R, W_nofuel_R, W_dry_R, W_tot_R] = payload_range(condition, nsample)
@@ -204,23 +181,23 @@ function [R, W_empty_R, W_nofuel_R, W_dry_R, W_tot_R] = payload_range(condition,
 
 	% Choose flight conditions:  max speed of max range.
 	if condition == 's'
-		M  = M_cruise;
+		M  = C.M_cr;
 		SFC = SFC_cruise;
 	elseif condition == 'r'
-		M = M_loiter;
+		M = C.M_loiter;
 		SFC = SFC_loiter;
 	end
 
 	% Aerodynamic efficiency.
-	eta_c = M * Cl/Cd;
+	eta_c = M * D.Wing.CL_cr/D.Propu.CD_plane;
 
 	% Segment 1:
-	% - Constant W_payload_1 = W_payload.
+	% - Constant W_payload_1 = C.W_payload.
 	% - Increase W_fuel_vol_1 from 0 to W_fuel_vol.
 	R_1   = zeros(1, nsample);
 	% Incremental weights.
 	W_empty_1    = linspace(W_empty,    W_empty,    nsample);
-	W_payload_1  = linspace(W_payload,  W_payload,  nsample);
+	W_payload_1  = linspace(C.W_payload,  C.W_payload,  nsample);
 	W_fuel_dry_1 = linspace(W_fuel_dry, W_fuel_dry, nsample);
 	W_fuel_vol_1 = linspace(0,          W_fuel_vol, nsample);
 	% Total weights.
@@ -235,7 +212,7 @@ function [R, W_empty_R, W_nofuel_R, W_dry_R, W_tot_R] = payload_range(condition,
 	R_2   = zeros(1, nsample);
 	% Incremental weights.
 	W_empty_2    = linspace(W_empty,    W_empty,    nsample);
-	W_payload_2  = linspace(W_payload,  0,          nsample);
+	W_payload_2  = linspace(C.W_payload,  0,          nsample);
 	W_fuel_dry_2 = linspace(W_fuel_dry, W_fuel_dry, nsample);
 	W_fuel_vol_2 = linspace(W_fuel_vol, W_fuel_vol, nsample);
 	% Total weights.

@@ -218,6 +218,7 @@ Propu.SFC_loiter    = SFC_loiter;
 Propu.W_fuel        = W_fuel;
 Propu.FW_ratio      = FW_ratio;
 Propu.vol_tank      = vol_tank;
+Propu.CD_plane      = Cd;
 
 % Save Propu in data.mat, which lies in the root directory.
 save(fullfile(file_dir, "../data.mat"), "Propu", "-append");
