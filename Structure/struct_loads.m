@@ -35,7 +35,6 @@ fuselage_loads();
 % Compute MNT on the wings cross sections.
 wings_loads();
 
-
 %% Fuselage loads
 
 	function fuselage_loads
@@ -140,4 +139,5 @@ wings_loads();
 			Mz_bb(i) = F_fin(i)*(l_tail_fin-x_bb);
 			Mx_section_bb(i) = - F_fin(i)*abs(CG_z(14));
 		end
+	end
 end

@@ -14,7 +14,7 @@ function [SLSconv] = thrust_SLSconv(TAS, h, BPR, G)
 %   BPR (double) -- Engine bypass ratio.
 %   G   (double) -- Gas generator function.
 % Return:
-%   alt_over_sl (double)  -- Thrust conversion factor.
+%   SLSconv (double) -- Thrust conversion factor.
 
 % Make Utils/ISA visible.
 addpath(genpath(fullfile(fileparts(mfilename("fullpath")), "../Utils")));

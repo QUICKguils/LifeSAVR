@@ -1,12 +1,14 @@
 function flight_envelope(h, opts)
-% FLIGHT_ENVELOPE
+% FLIGHT_ENVELOPE  Build the flight envelope.
 %
 % Arguments:
-%	h: double
+%	h: double, optional.
 %	  Altitude at which the flight envelope is desired, in meter.
-%	opts: char {'p', 'w'}, optional
+%     Default is the cruise altitude.
+%	opts: char {'p', 'w'}, optional.
 %	  'p' -> Enable plots creation.
 %	  'w' -> Write plotting data in external file.
+%     Default is 'p'.
 
 %% Imports
 
@@ -72,7 +74,7 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 	function TAS = tas_max_lift(n)
 		% N_MAX_LIFT  True airspeed at max lift, for the given load factor.
 
-		TAS = sqrt(2 * abs(n) * D.Plane.MTOW * C.g / (rho * D.Wing.S * D.Wing.CL_max));
+		TAS = sqrt(2 * abs(n) * D.Plane.MTOW * C.g / (rho * D.Wing.surf * D.Wing.CL_max));
 	end
 
 %% Maveuver envelope
@@ -146,15 +148,15 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 
  		% Airplaine weight ratio and gust alleviation factor.
 		% FIX: we should use the CL_alpha of the plane, not the wing.
-		mu = 2 * D.Plane.MTOW * C.g / (rho * D.Wing.CL_alpha * D.Wing.mac * C.g * D.Wing.S);
+		mu = 2 * D.Plane.MTOW * C.g / (rho * D.Wing.CL_alpha * D.Wing.mac * C.g * D.Wing.surf);
 		F = 0.88 * mu / (5.3 + mu);
 
 		% Positive and negative gust lines at Vc and Vd.
 		% EAS in expressed in [m/s].
-		ng_c_plus_EAS  = @(EAS) 1 + F*C.rho_sl*D.Wing.S*D.Wing.CL_alpha*(Ue_c*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
-		ng_c_minus_EAS = @(EAS) 1 - F*C.rho_sl*D.Wing.S*D.Wing.CL_alpha*(Ue_c*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
-		ng_d_plus_EAS  = @(EAS) 1 + F*C.rho_sl*D.Wing.S*D.Wing.CL_alpha*(Ue_d*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
- 		ng_d_minus_EAS = @(EAS) 1 - F*C.rho_sl*D.Wing.S*D.Wing.CL_alpha*(Ue_d*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
+		ng_c_plus_EAS  = @(EAS) 1 + F*C.rho_sl*D.Wing.surf*D.Wing.CL_alpha*(Ue_c*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
+		ng_c_minus_EAS = @(EAS) 1 - F*C.rho_sl*D.Wing.surf*D.Wing.CL_alpha*(Ue_c*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
+		ng_d_plus_EAS  = @(EAS) 1 + F*C.rho_sl*D.Wing.surf*D.Wing.CL_alpha*(Ue_d*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
+ 		ng_d_minus_EAS = @(EAS) 1 - F*C.rho_sl*D.Wing.surf*D.Wing.CL_alpha*(Ue_d*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
 		% Convert the functions argument, to work with TAS.
 		ng_c_plus_TAS  = @(TAS) ng_c_plus_EAS(TAS  * TAS2EAS);
 		ng_c_minus_TAS = @(TAS) ng_c_minus_EAS(TAS * TAS2EAS);

@@ -1,5 +1,6 @@
 % TODO:
 % - Encode tail data in data.mat.
+% - Use comp position stored in data.mat.
 % - Wait for the CAD to correcct the component placements.
 
 function Loads = aero_loads(h)
@@ -42,7 +43,7 @@ end
 %% Main solve
 
 % Function global variables.
-[rho, ~, ~, a] = ISA(h);       % Air properties at desired altitude.
+[rho, ~, ~, ~] = ISA(h);       % Air properties at desired altitude.
 TAS2EAS = sqrt(rho/C.rho_sl);  % Conversion from true airspeed to equivalent airspeed.
 CP = D.FE.CP;                  % Extract the CP table, just for conciseness.
 
@@ -51,8 +52,8 @@ theta_dd_add = 1.0472;  % Additional pitch acceleration [rad/s²].
 psi_max = 15;           % Maximum yaw angle allowed [°].
 
 
-% The return value consists of a table that contains the computed
-% aerodynamic loads for all the CP.
+% The return value consists of a table
+% that contains the computed aerodynamic loads for all the CP.
 Loads = table(...
 	'Size', [height(CP), 6], ...
 	'VariableNames', {'n',      'aoa',    'L',      'P',      'F_fin',  'M_fus'}, ...
@@ -78,33 +79,35 @@ end
 		% Return:
 		%   Sol (1x6 table) -- Solution of the dynamic equilibrium.
 
+		% Retrieve the true airspeed.
+		TAS = EAS / TAS2EAS;
+
 		% Thrust [N].
-		% WARN: check if TAS or EAS.
-		% Conversion of equivalent airspeed (EAS) to true airspeed (TAS).
-		M = EAS / TAS2EAS / a;
-		T = thrust_sl2alt(M, h);
+		T = D.Propu.T_sls * thrust_SLSconv(TAS, h, D.Propu.engine.BPR, D.Propu.engine.G);
 
-		% Weight [N].
-		nW(idx) = D.Plane.MTOW * C.g * n;
+		% Equivalent plane weight [N].
+		W = D.Plane.MTOW * C.g * n;
 
-		% Drag [N].
-		% TODO: must depend on the envelope point.
-		CD_wing = Wing.CD_0 + Wing.CL_cr^2 / (Wing.e * pi * Wing.AR);
-		% C_D_wing = max([c_D_cruise_loiter, c_D_cruise_in,  c_D_cruise_eg]);
-		D_w(idx) = 0.5 * CD_wing * EAS^2 * rho * D.Wing.S;
-		% TODO: modify when we have more precise values.
-		CD_body = 0.015;
-		D_b(idx)  = 0.5 * CD_body * EAS^2 * rho * 2*pi*width_f^2/4;
+		% Drag [N].  TODO: modify when we have more precise values.
+		%
+		% Drag on the wings. We take only the wing induced drag as a first
+		% estimation.
+		CD_wing = D.Wing.CL_cr^2 / (D.Wing.e * pi * D.Wing.AR);
+		D_wing  = 0.5 * rho * TAS^2 * D.Wing.S * CD_wing;
+		% Drag on the fuselage. We take the parasitic drag at zero lift of the
+		% entire plane, as a first estimation.
+		CD_body = D.Plane.CD_0;
+		D_body  = 0.5 * rho * TAS^2 * D.Wing.S * CD_body;  % TODO: check if wing surf or plane wetted surf.
 
-		% Pitching moment.
-		C_M_0 = -0.1;
-		K_n   = 0.09; % TODO: Check if this value is OK.
+		% Pitching moment [N*m].
 		% This formula does not apply to our geometry.
+		% C_M_0 = -0.1;
+		% K_n   = 0.09;
 		% C_M = C_M_0 - K_n * D.Wing.CL_max - 0.0015 * psi_max;
 		C_M = D.Wing.airfoil.C_m;
-		M(idx) = 0.5 * C_M * EAS^2 * rho * D.Wing.S * D.Wing.smc;
+		M = 0.5 * C_M * TAS^2 * rho * D.Wing.S * D.Wing.smc;
 
-		I_theta = 3000; % A calculer avec le CAD
+		I_theta = 3000; % TODO: to be computed with the CAD.
 		c_l_alpha_plane = 6.38;
 		alpha_L0_f = -0.0539;
 
@@ -114,8 +117,9 @@ end
 		% (wait for the CAD).
 		syms aoa L P;
 		eqI   = c_l_alpha_plane * (aoa - alpha_L0_f) - L / (0.5 * C.rho_cr * D.Wing.S * (EAS^2)); %Lift of the wing
-		eqII  = abs(c_g - pos(1)) * L - abs(z_cg - z_pos(8)) * T(idx) + z_cg * D_b(idx) - z_pos(1) * D_w(idx) - abs(pos(4) - c_g) * P + M(idx) - I_theta * theta_dd_add; % Moments about COG
-		eqIII = L + P - nW(idx) + T(idx) * sin(aoa-alpha_L0_f); % Vertical equilibrium
+		eqII  = abs(c_g - pos(1)) * L - abs(z_cg - z_pos(8)) * T + z_cg * D_body - z_pos(1) * D_wing - abs(pos(4) - c_g) * P + M(idx) - I_theta * theta_dd_add; % Moments about COG
+		eqIII = L + P - W + T(idx) * sin(aoa-alpha_L0_f); % Vertical equilibrium
+		% TODO: changes names to not mess up with syms.
 		[aoa, L, P] = double(vpasolve(eqI, eqII, eqIII, aoa, L, P));
 
 		% Lift curve slope of the vertical tail.

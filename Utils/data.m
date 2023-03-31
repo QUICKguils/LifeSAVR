@@ -6,7 +6,7 @@ function data
 %
 % NOTE:
 % This file should not exist. It should be removed, once all the matlab
-% code is integrated and write themselves in data.mat.
+% code is integrated and write itself in data.mat.
 
 %% Imports
 
@@ -19,46 +19,44 @@ C = load(fullfile(file_dir, "../constants.mat"));
 %% Plane
 
 Plane.MTOW = 3612.73743;  % MTOW [kg].
+Plane.CD_0 = 0.017;       % Zero lift drag coefficient.
 
 %% Wing
 
 %Wing planform.
 Wing.AR       = 8;         % Aspect ratio.
-Wing.lambda   = 0.35;      % Taper ratio.
-Wing.S        = 7.3686;    % Surface area [m²].
-Wing.b        = 7.6778;    % Span [m].
-Wing.c_r      = 1.4218;    % Chord at root [m].
-Wing.c_t      = 0.4976;    % Chord at tip [m].
-Wing.smc      = 0.9597;    % Standard mean chord [m].
-Wing.mac      = 1.0338;    % Mean Aerodynamic Chord [m].
-Wing.y_ac     = 1.6114;    % Spanwise position of MAC [m].
+Wing.taper    = 0.35;      % Taper ratio.
+Wing.surf     = 7.7339;    % Surface area [m²].
+Wing.span     = 7.8658;    % Span [m].
+Wing.c_root      = 1.4566;    % Chord at root [m].
+Wing.c_tip      = 0.5098;    % Chord at tip [m].
+Wing.smc      = 0.9832;    % Standard mean chord [m].
+Wing.mac      = 1.0592;    % Mean Aerodynamic Chord [m].
+Wing.y_ac     = 1.6508;    % Spanwise position of MAC [m].
 Wing.twist    = -1;        % Aerodynamic twist (washout) [°].
 Wing.sweep    = 24;        % Quarter-chord sweep angle [°].
-Wing.mass     = 188.96;    % Dry mass of wing [kg].
-Wing.Vol_fuel = 0.370253;  % Volume of fuel in wing [m³].
-Wing.cg_mac   = 30;        % Position of the CG of the wing at MAC w.r.t. the LE [%].
-Wing.S_wet    = 15.1793;   % Wetted surface area [m²].
+Wing.mass     = 201.1955;  % Dry mass of wing [kg].
+Wing.Vol_fuel = 0.39812;   % Volume of fuel in wing [m³].
+Wing.cg_mac   = 30;        % Position of the CG at MAC w.r.t. the LE [%].
+Wing.S_wet    = 15.9318;   % Wetted surface area [m²].
 Wing.e        = 0.6164;    % Oswald's span efficiency.
 
 % Wing Lift characteristics.
-Wing.CL_alpha      = 5.6909;   % Slope of the lift coefficient of the wing [1/rad].
+Wing.CL_alpha      = 5.6909;   % Slope of the lift coefficient [1/rad].
 Wing.aoa_zerolift  = -1.7672;  % Zero-lift angle of attack at root [°].
-Wing.aoa_midcruise = 0.5044;   % Angle of attack at root at mid-cruise [°].
-Wing.i             = 0.9241;   % Angle of incidence of the wing [°].
-Wing.CL_cr         = 0.276;    % Refined Lift coefficient at cruise (MTOW) [-].
-
-% Wing drag characteristics.
-Wing.CD_0 = 0.017;  % Zero lift drag coefficient.
+Wing.aoa_midcruise = 0.52704;  % Angle of attack at root at mid-cruise [°].
+Wing.i             = 0.9468;   % Angle of incidence [°].
+Wing.CL_cr         = 0.29999;  % Refined Lift coefficient at cruise (MTOW) [-].
 
 % Stall behaviour.
-Wing.CL_max               = 1.4927;   % Wing max lift coefficient in clean configuration [-].
-Wing.CL_max_takeoff       = 2.0397;   % Wing max lift coefficient at takeoff [-].
-Wing.CL_max_landing       = 2.1723;   % Wing max lift coefficient at landing [-].
-Wing.V_s_takeoff          = 55.1174;  % Stall velocity in takeoff configuration (MTOW) [m/s].
-Wing.V_s_landing          = 36.2724;  % Stall velocity in landing configuration [m/s].
-Wing.V_s_landing_mtow     = 53.409;   % Stall velocity in landing configuration (MTOW) [m/s].
-Wing.delta_cl_max_takeoff = 0.55;     % Delta max lift coeff at takeoff.
-Wing.delta_cl_max_landing = 0.68;     % Delta max lift coeff at landing.
+Wing.CL_max               = 1.4927;   % Max lift coefficient in clean configuration [-].
+Wing.CL_max_takeoff       = 2.0164;   % Max lift coefficient at takeoff [-].
+Wing.CL_max_landing       = 2.1458;   % Max lift coefficient at landing [-].
+Wing.V_s_takeoff          = 57.7873;  % Stall velocity in takeoff configuration (MTOW) [m/s].
+Wing.V_s_landing          = 40.3656;  % Stall velocity in landing configuration [m/s].
+Wing.V_s_landing_mtow     = 56.0196;  % Stall velocity in landing configuration (MTOW) [m/s].
+Wing.delta_cl_max_takeoff = 0.5237;   % Delta max lift coeff at takeoff.
+Wing.delta_cl_max_landing = 0.6531;   % Delta max lift coeff at landing.
 
 % Airfoil profile.
 Wing.airfoil.name         = "NASA SC(2)-0412";
@@ -81,9 +79,53 @@ Wing.flaps.defl_landing = 40; % Flap deflection at landing [°].
 % Ends at 90% of span
 % 25% of the airfoil chord
 
-%% Tail
+%% Horizontal tail
 
-% TODO: encode tail data.
+HT.Vol_coeff        = 0.8;        % Volume coefficient.
+HT.AR               = 4.25;       % Aspect ratio.
+HT.taper            = 0.415;      % Taper ratio.
+HT.sweep            = 29;         % Quarter-chord sweep angle [°].
+HT.lever            = 3.58;       % Lever arm [m].
+HT.surf             = 1.58;       % Surface [m²].
+HT.visible_halfspan = 1.33;       % Individual visible span [m].
+HT.c_root           = 0.84;       % Chord at root [m].
+HT.c_tip            = 0.35;       % Chord at tip [m].
+HT.mac              = 0.63;       % Mean aerodynamic chord [m].
+HT.span             = 3.56;       % Total span [m].
+HT.hidden           = 5;          % Percentage of hidden tail.
+HT.W                = 15.6;       % Weight [kg].
+HT.deda             = 0.45;       % Downwash slope [1/rad].
+HT.eps              = 1.8;        % Downwash.
+HT.CL               = -0.06;      % Lift coefficient.
+HT.CL_alpha         = 1.8;        % Slope of the lift coefficient [1/rad].
+HT.aoi              = -0.15;      % Angle of incidence [°].
+HT.x_AC             = 0.19;       % X-position of the aerodynamic center [m].
+HT.y                = 0.29;       % Distance from root to MAC [m].
+HT.elevator.c       = 0.22;       % Elevator chord [m].
+HT.elevator.L       = 1.2;        % Elevator span [m]
+HT.elevator.sweep   = 23.8;       % Elevator sweep angle [°].
+HT.height           = -0.2;       % Distance between wing and tail [m].
+HT.CL_max           = -0.21;      % Max lift coefficient.
+HT.airfoil.name     = "SC 0010";  % Airfoil name.
+
+%% Vertical tail
+
+VT.Vol_coeff     = 0.07;       % Volume coefficient.
+VT.AR            = 1.5;        % Aspect ratio.
+VT.taper         = 0.45;       % Taper ratio.
+VT.sweep         = 24;         % Quarter-chord sweep angle [°].
+VT.surf          = 1.2;        % Surface [m²].
+VT.span          = 1.37;       % Span [m].
+VT.c_root        = 1.2;        % Chord at root [m].
+VT.c_tip         = 0.54;       % Chord at tip [m].
+VT.mac           = 0.92;       % Mean aerodynamic chord [m].
+VT.y             = 0.6;        % Distance from root to MAC [m].
+VT.rudder.c      = 0.32;       % Rudder chord [m].
+VT.rudder.length = 1.24;       % Rudder length [m].
+VT.rudder.surf   = 0.4;        % Rudder surface [m²].
+VT.rudder.sweep  = 13.7;       % Rudder sweep angle [°].
+VT.W             = 37;         % Weight [kg].
+VT.airfoil.name  = "SC 0010";  % Airfoil name.
 
 %% Propulsion
 
@@ -149,6 +191,6 @@ Comp(:, "Weight") = array2table(Comp{:, "Weight"} .* C.lb2kg);
 %% Write in data.mat
 
 % Save data in data.mat, which lies in the root directory.
-save(fullfile(file_dir, "../data.mat"), "Plane", "Wing", "Comp");
+save(fullfile(file_dir, "../data.mat"), "Plane", "Wing", "HT", "VT", "Comp");
 
 end

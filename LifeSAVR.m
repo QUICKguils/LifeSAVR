@@ -1,5 +1,5 @@
 % TODO:
-% - Implement opts
+% - Finish to implement `opts`.
 
 function LifeSAVR(opts)
 % LIFESAVR  triggers all the code of the project.
@@ -27,11 +27,11 @@ data();
 
 % Option defaults: generate the plots, in ISoU.
 if ~nargin
-		opts = 'p';
+	opts = 'p';
 end
 
 %% Execute the code
-% TODO: good idea to tell which function write in  which MAT files.
+% TODO: good idea to tell which function write in which MAT files.
 
 % Load project constants.
 C = load(fullfile(root_dir, "constants.mat"));
@@ -46,6 +46,6 @@ flight_envelope(C.h_cr, opts);
 % loads_structural();
 
 % Debug print.
-disp("exc OK");
+disp("LifeSAVR execution: OK");
 
 end

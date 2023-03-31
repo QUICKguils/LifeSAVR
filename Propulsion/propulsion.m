@@ -84,7 +84,7 @@ engine = table2struct(engine_table("FJ44-4A", :));
 Cd = Plane.CD_0 + Wing.CL_cr^2 / (Wing.e * pi * Wing.AR);
 
 % Thrust at cruise must equal the drag [N].
-F_cr = 0.5 * C.rho_cr * C.V_cr^2 * Wing.S * Cd;
+F_cr = 0.5 * C.rho_cr * C.V_cr^2 * Wing.surf * Cd;
 
 %% Cruise thrust to uninstalled thrust
 % The uninstalled thrust corresponds to the thrust measured in lab
@@ -146,7 +146,7 @@ F_c = engine.Thrust * (1 - install_loss) / (1 + safety_thrust) * SLS2cr;
 
 % Design cruise speed [m/s].
 % Obtained through the thrust-drag equality.
-V_c = sqrt(F_c / (0.5 * C.rho_cr * Wing.S * Cd));
+V_c = sqrt(F_c / (0.5 * C.rho_cr * Wing.surf * Cd));
 
 % Design cruise and dive mach numbers.
 M_c = V_c / C.a_cr;
@@ -175,7 +175,7 @@ safety_bad_engine = 5e-2;
 safety_trapped_fuel = 1e-2;
 
 % Estimation of the thrust needed at loiter [N].
-F_loiter = 0.5 * C.rho_cr * C.V_loiter^2 * Wing.S * Cd;
+F_loiter = 0.5 * C.rho_cr * C.V_loiter^2 * Wing.surf * Cd;
 
 % Summing amout of fuel required for all the mission steps [kg].
 W_fuel = ...
