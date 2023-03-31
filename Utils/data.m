@@ -16,11 +16,6 @@ file_dir = fileparts(mfilename("fullpath"));
 % Constants.
 C = load(fullfile(file_dir, "../constants.mat"));
 
-%% Plane
-
-Plane.MTOW = 3612.73743;  % MTOW [kg].
-Plane.CD_0 = 0.017;       % Zero lift drag coefficient.
-
 %% Wing
 
 %Wing planform.
@@ -28,8 +23,8 @@ Wing.AR       = 8;         % Aspect ratio.
 Wing.taper    = 0.35;      % Taper ratio.
 Wing.surf     = 7.7339;    % Surface area [m²].
 Wing.span     = 7.8658;    % Span [m].
-Wing.c_root      = 1.4566;    % Chord at root [m].
-Wing.c_tip      = 0.5098;    % Chord at tip [m].
+Wing.c_root   = 1.4566;    % Chord at root [m].
+Wing.c_tip    = 0.5098;    % Chord at tip [m].
 Wing.smc      = 0.9832;    % Standard mean chord [m].
 Wing.mac      = 1.0592;    % Mean Aerodynamic Chord [m].
 Wing.y_ac     = 1.6508;    % Spanwise position of MAC [m].
@@ -65,7 +60,7 @@ Wing.airfoil.cl_alpha     = 10.2106;  % Slope of the lift coefficient [1/rad].
 Wing.airfoil.cl_max       = 1.72;     % Max lift coefficient (incompressible) [-].
 Wing.airfoil.aoa_zerolift = -2.022;   % Zero-lift angle of attack of the airfoil [°].
 Wing.airfoil.M_dd         = 0.786;    % Drag divergence mach number [-].
-Wing.airfoil.C_m          = -0.0778;  % Pitching moment coefficient (incompressible) [-].
+Wing.airfoil.cm           = -0.0778;  % Pitching moment coefficient (incompressible) [-].
 
 % Flaps planform: plain flaps.
 % Begins at the end of fuselage width + 2% of span
@@ -139,12 +134,12 @@ VT.airfoil.name  = "SC 0010";  % Airfoil name.
 
 Comp = table( ...
 	'Size',          [0, 3], ...
-	'VariableTypes', {'double', 'double', 'double'}, ...
-	'VariableNames', {'Weight', 'CG_x',   'CG_z'  });
+	'VariableTypes', {'double', 'double',  'double'}, ...
+	'VariableNames', {'Weight', 'COG_x',   'COG_z' });
 
-Comp("Fuselage",                    :) = {1250.1,      3.6,    0.5};
-Comp("Main_landing_gear",           :) = {379.4461,    4.7,    0.5};
-Comp("Nose_landing_gear",           :) = {79.7383,     1.5,    0.5};
+Comp("Fuselage",                    :) = {1233.8,      3.6,    0.5};
+Comp("Main_landing_gear",           :) = {381.4,       4.7,    0.5};
+Comp("Nose_landing_gear",           :) = {80.2891,     1.5,    0.5};
 Comp("Engine_mount",                :) = {6.7189,      7.13,   0.5};
 Comp("Engine_section",              :) = {4.782,       7.13,   0.5};
 Comp("Air_induction_system",        :) = {333.1425,    4.48,   0.5};
@@ -155,12 +150,12 @@ Comp("Instruments",                 :) = {83.49,       3.5,    0.5};
 Comp("Hydraulics",                  :) = {171.7485,    4.5,    0.5};
 Comp("Furnishings",                 :) = {108.8,       1.5,    0.5};
 Comp("Handling gear",               :) = {0.6596,      1.5,    0.5};
-Comp("Empennage vertical",          :) = {29.63,       7.309,  0.5};
-Comp("Empennage horizontal",        :) = {14.68,       7.6474, 0.5};
-Comp("Wings",                       :) = {414.83,      4.1528, 0.5};
-Comp("Fuel Wing",                   :) = {669.353613,  4.1528, 0.5};
-Comp("Fuel fuselage",               :) = {3188.731387, 4.1528, 0.5};
-Comp("Payload",                     :) = {300,         4.1528, 0.5};
+Comp("Empennage vertical",          :) = {29.63,       7.3595, 0.5};
+Comp("Empennage horizontal",        :) = {14.68,       7.6576, 0.5};
+Comp("Wings",                       :) = {414.83,      4.1228, 0.5};
+Comp("Fuel Wing",                   :) = {669.3390785, 4.1228, 0.5};
+Comp("Fuel fuselage",               :) = {3078.514922, 4.1228, 0.5};
+Comp("Payload",                     :) = {300,         4.1228, 0.5};
 Comp("Engine",                      :) = {670.21,      7.13,   0.5};
 Comp("Flight control unit",         :) = {20,          3,      0.5};
 Comp("System control unit",         :) = {18,          3,      0.5};
@@ -188,9 +183,15 @@ Comp("Sensor growth",               :) = {15,          1.5,    0.5};
 % Convert weights from lb to kg.
 Comp(:, "Weight") = array2table(Comp{:, "Weight"} .* C.lb2kg);
 
+%% Plane
+
+Plane.MTOW  = sum(Comp{:, "Weight"});                                   % MTOW [kg].
+Plane.COG_x = sum(Comp{:, "Weight"} .* Comp{:, "COG_x"}) / Plane.MTOW;  % X-position of COG [m].
+Plane.CD_0  = 0.017;                                                    % Zero lift drag coefficient.
+
 %% Write in data.mat
 
 % Save data in data.mat, which lies in the root directory.
-save(fullfile(file_dir, "../data.mat"), "Plane", "Wing", "HT", "VT", "Comp");
+save(fullfile(file_dir, "../data.mat"), "Wing", "HT", "VT", "Comp", "Plane");
 
 end
