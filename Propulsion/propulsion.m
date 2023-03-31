@@ -81,7 +81,7 @@ engine = table2struct(engine_table("FJ44-4A", :));
 % e = e_straight + (e_swept - e_straight)/30 * Wing.sweep;
 
 % Estimation of the drag coefficient.
-Cd = Wing.CD_0 + Wing.CL_cr^2 / (Wing.e * pi * Wing.AR);
+Cd = Plane.CD_0 + Wing.CL_cr^2 / (Wing.e * pi * Wing.AR);
 
 % Thrust at cruise must equal the drag [N].
 F_cr = 0.5 * C.rho_cr * C.V_cr^2 * Wing.S * Cd;
@@ -91,7 +91,7 @@ F_cr = 0.5 * C.rho_cr * C.V_cr^2 * Wing.S * Cd;
 % conditions by the manufacturers.
 % WARN: conditions assumed below can depend on the manufacturer!
 
-% Thrust at sea level [N].
+% Thrust at sea level, static (SLS) [N].
 % Actually there is a causal dilemma: we want to estimate the equivalent
 % uninstalled thrust to select a matching engine. But at the same time,
 % we need to know which engine is used in order to evaluate this
@@ -99,23 +99,19 @@ F_cr = 0.5 * C.rho_cr * C.V_cr^2 * Wing.S * Cd;
 % depend on the engine BPR.
 % -> We can have a first guesstimate of 0.8 for the value of G. This
 % corresponds to a quite small BPR engine.
-% Teams>Propulsion>Files>Sources>Bartel-SFC_Calculations.pdf (page 5)
+% Teams>Propulsion>Files>Sources>Bartel-SFC_Calculations.pdf (page 8)
 BPR = engine.BPR;
 G = engine.G;
-A = -0.4327 * (C.p_cr/C.p_sl)^2 + 1.3855 * C.p_cr/C.p_sl + 0.0472;
-X =  0.1377 * (C.p_cr/C.p_sl)^2 - 0.4374 * C.p_cr/C.p_sl + 1.3003;
-Z =  0.9106 * (C.p_cr/C.p_sl)^2 - 1.7736 * C.p_cr/C.p_sl + 1.8697;
-cr_over_sl = A ...
-	- Z * C.p_cr/C.p_sl * (0.377*(1+BPR)*C.M_cr) / sqrt((1+0.82*BPR)*G) ...
-	+ X * C.p_cr/C.p_sl * (0.23+0.19*sqrt(BPR)) * C.M_cr^2;
-F_sl = F_cr / cr_over_sl;
+
+SLS2cr = thrust_SLSconv(C.V_cr, C.h_cr, BPR, G);
+F_sls = F_cr / SLS2cr;
 
 % Installed thrust [N].
 % Take a safety of around 20% more (according to T. Lambert).
 % The plane actually need more thrust than for the cruise:
 % we have to make turns, accelerations, maybe steep climbs, etc.
 safety_thrust = 0.2;
-F_installed = F_sl * (1 + safety_thrust);
+F_installed = F_sls * (1 + safety_thrust);
 
 % Thrust to weight ratio.
 % The MTOW is conventionally expressed in [kg] and thus need to be
@@ -146,7 +142,7 @@ assert(engine.Thrust >= F_uninstalled, ...
 % Maximum thrust at cruise [N].
 % We just have to revert steps of the preceding section, given the
 % uninstalled thrust of the selected engine.
-F_c = engine.Thrust * (1 - install_loss) / (1 + safety_thrust) * cr_over_sl;
+F_c = engine.Thrust * (1 - install_loss) / (1 + safety_thrust) * SLS2cr;
 
 % Design cruise speed [m/s].
 % Obtained through the thrust-drag equality.
@@ -206,7 +202,7 @@ vol_tank = W_fuel / rho_fuel;
 Propu.engine_table  = engine_table;
 Propu.engine        = engine;
 Propu.T_cr          = F_cr;
-Propu.T_sl          = F_sl;
+Propu.T_sls         = F_sls;
 Propu.T_installed   = F_installed;
 Propu.T_uninstalled = F_uninstalled;
 Propu.TW_ratio      = TW_ratio;
