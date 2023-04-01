@@ -133,7 +133,7 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 		% NOTE:
 		% The computed gust lines should be more open that what is currently
 		% obtained, leading to a gust envelope that is not entirely contained in
-		% the maneuver envelope. However, calculations in this section has been
+		% the maneuver envelope. However, calculations in this section have been
 		% revised again and again, both with imperial and SI units. Reference
 		% formulae can be found at:
 		% www.ecfr.gov/on/2017-08-29/title-14/chapter-I/subchapter-C/part-23/subpart-C/
