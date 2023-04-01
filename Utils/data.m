@@ -40,7 +40,7 @@ Wing.e        = 0.6164;    % Oswald's span efficiency.
 Wing.CL_alpha      = 5.6909;   % Slope of the lift coefficient [1/rad].
 Wing.aoa_zerolift  = -1.7672;  % Zero-lift angle of attack at root [°].
 Wing.aoa_midcruise = 0.52704;  % Angle of attack at root at mid-cruise [°].
-Wing.i             = 0.9468;   % Angle of incidence [°].
+Wing.aoi           = 0.9468;   % Angle of incidence [°].
 Wing.CL_cr         = 0.29999;  % Refined Lift coefficient at cruise (MTOW) [-].
 
 % Stall behaviour.
@@ -137,48 +137,48 @@ Comp = table( ...
 	'VariableTypes', {'double', 'double',  'double'}, ...
 	'VariableNames', {'Weight', 'COG_x',   'COG_z' });
 
-Comp("Fuselage",                    :) = {1233.8,      3.6,    0.5};
-Comp("Main_landing_gear",           :) = {381.4,       4.7,    0.5};
-Comp("Nose_landing_gear",           :) = {80.2891,     1.5,    0.5};
-Comp("Engine_mount",                :) = {6.7189,      7.13,   0.5};
-Comp("Engine_section",              :) = {4.782,       7.13,   0.5};
-Comp("Air_induction_system",        :) = {333.1425,    4.48,   0.5};
-Comp("Tail_pipe",                   :) = {4.7075,      7.75,   0.5};
-Comp("Starter",                     :) = {12.65,       6.48,   0.5};
-Comp("Fuel system and empty tanks", :) = {11.087,      3.6028, 0.5};
-Comp("Instruments",                 :) = {83.49,       3.5,    0.5};
-Comp("Hydraulics",                  :) = {171.7485,    4.5,    0.5};
-Comp("Furnishings",                 :) = {108.8,       1.5,    0.5};
-Comp("Handling gear",               :) = {0.6596,      1.5,    0.5};
-Comp("Empennage vertical",          :) = {29.63,       7.3595, 0.5};
-Comp("Empennage horizontal",        :) = {14.68,       7.6576, 0.5};
-Comp("Wings",                       :) = {414.83,      4.1228, 0.5};
-Comp("Fuel Wing",                   :) = {669.3390785, 4.1228, 0.5};
-Comp("Fuel fuselage",               :) = {3078.514922, 4.1228, 0.5};
-Comp("Payload",                     :) = {300,         4.1228, 0.5};
-Comp("Engine",                      :) = {670.21,      7.13,   0.5};
-Comp("Flight control unit",         :) = {20,          3,      0.5};
-Comp("System control unit",         :) = {18,          3,      0.5};
-Comp("Flight transduces",           :) = {3,           4.4202, 0.5};
-Comp("Power engine control unit",   :) = {7,           7.13,   0.5};
-Comp("Power converter assembly",    :) = {4,           7.13,   0.5};
-Comp("GPS receiver (anti-jam)",     :) = {25,          1.5,    0.5};
-Comp("GPS antenna",                 :) = {6,           1.5,    0.5};
-Comp("Battery (non-propulsion)",    :) = {13,          1.5,    0.5};
-Comp("Cooling and pressurization",  :) = {5,           2.6,    0.5};
-Comp("Air data probe",              :) = {1,           4.47,   0.5};
-Comp("Anti-ice",                    :) = {2,           1,      0.5};
-Comp("Thermal management",          :) = {23,          2.5,    0.5};
-Comp("Miscelectrical wiring",       :) = {5,           2,      0.5};
-Comp("Basic satellite radio",       :) = {34,          2.5,    0.5};
-Comp("Data handling and linking",   :) = {24,          2.5,    0.5};
-Comp("Flight termination system",   :) = {10,          2,      0.5};
-Comp("Navigation fusion processor", :) = {9,           2,      0.5};
-Comp("Transponders",                :) = {15,          1.5,    0.5};
-Comp("Radar",                       :) = {63,          0.75,   0.5};
-Comp("Nose EO/IR/LIDAR",            :) = {100,         1,      0.5};
-Comp("Aft EO/IR/LIDAR",             :) = {50,          6.5,    0.5};
-Comp("Sensor growth",               :) = {15,          1.5,    0.5};
+Comp("Fuselage",                    :) = {1233.8,      3.6,    0};
+Comp("Main landing gear",           :) = {381.4,       4.7,    0};
+Comp("Nose landing gear",           :) = {80.2891,     1.5,    0};
+Comp("Engine mount",                :) = {6.7189,      7.13,   0};
+Comp("Engine section",              :) = {4.782,       7.13,   0};
+Comp("Air induction system",        :) = {333.1425,    4.48,   0};
+Comp("Tail pipe",                   :) = {4.7075,      7.75,   0};
+Comp("Starter",                     :) = {12.65,       6.48,   0};
+Comp("Fuel system and empty tanks", :) = {11.087,      3.6028, 0};
+Comp("Instruments",                 :) = {83.49,       3.5,    0};
+Comp("Hydraulics",                  :) = {171.7485,    4.5,    0};
+Comp("Furnishings",                 :) = {108.8,       1.5,    0};
+Comp("Handling gear",               :) = {0.6596,      1.5,    0};
+Comp("Vertical tail",               :) = {29.63,       7.3595, 0};
+Comp("Horizontal tail",             :) = {14.68,       7.6576, 0};
+Comp("Wings",                       :) = {414.83,      4.1228, 0};
+Comp("Fuel Wing",                   :) = {669.3390785, 4.1228, 0};
+Comp("Fuel fuselage",               :) = {3078.514922, 4.1228, 0};
+Comp("Payload",                     :) = {300,         4.1228, 0};
+Comp("Engine",                      :) = {670.21,      7.13,   0};
+Comp("Flight control unit",         :) = {20,          3,      0};
+Comp("System control unit",         :) = {18,          3,      0};
+Comp("Flight transduces",           :) = {3,           4.4202, 0};
+Comp("Power engine control unit",   :) = {7,           7.13,   0};
+Comp("Power converter assembly",    :) = {4,           7.13,   0};
+Comp("GPS receiver (anti-jam)",     :) = {25,          1.5,    0};
+Comp("GPS antenna",                 :) = {6,           1.5,    0};
+Comp("Battery (non-propulsion)",    :) = {13,          1.5,    0};
+Comp("Cooling and pressurization",  :) = {5,           2.6,    0};
+Comp("Air data probe",              :) = {1,           4.47,   0};
+Comp("Anti-ice",                    :) = {2,           1,      0};
+Comp("Thermal management",          :) = {23,          2.5,    0};
+Comp("Miscelectrical wiring",       :) = {5,           2,      0};
+Comp("Basic satellite radio",       :) = {34,          2.5,    0};
+Comp("Data handling and linking",   :) = {24,          2.5,    0};
+Comp("Flight termination system",   :) = {10,          2,      0};
+Comp("Navigation fusion processor", :) = {9,           2,      0};
+Comp("Transponders",                :) = {15,          1.5,    0};
+Comp("Radar",                       :) = {63,          0.75,   0};
+Comp("Nose EO/IR/LIDAR",            :) = {100,         1,      0};
+Comp("Aft EO/IR/LIDAR",             :) = {50,          6.5,    0};
+Comp("Sensor growth",               :) = {15,          1.5,    0};
 
 % Convert weights from lb to kg.
 Comp(:, "Weight") = array2table(Comp{:, "Weight"} .* C.lb2kg);
@@ -187,6 +187,7 @@ Comp(:, "Weight") = array2table(Comp{:, "Weight"} .* C.lb2kg);
 
 Plane.MTOW  = sum(Comp{:, "Weight"});                                   % MTOW [kg].
 Plane.COG_x = sum(Comp{:, "Weight"} .* Comp{:, "COG_x"}) / Plane.MTOW;  % X-position of COG [m].
+Plane.COG_z = 0;  %  TODO: wait for CAD values.
 Plane.CD_0  = 0.017;                                                    % Zero lift drag coefficient.
 
 %% Write in data.mat
