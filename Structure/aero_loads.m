@@ -51,8 +51,8 @@ TAS2EAS = sqrt(rho/C.rho_sl);  % Conversion from true airspeed to equivalent air
 CP = D.FE.CP;                  % Extract the CP table, just for conciseness.
 
 % From the statement.
-theta_dd = 1.0472;  % Additional pitch acceleration [rad/s²].
-psi_max  = 15;      % Maximum yaw angle allowed [°].
+theta_dd = 1.0472;       % Additional pitch acceleration [rad/s²].
+psi_max  = deg2rad(15);  % Maximum yaw angle allowed [rad].
 
 % The return value consists of a table
 % that contains the computed aerodynamic loads for all the CP.
@@ -64,7 +64,6 @@ Loads = table(...
 % Distances bewteen airplane COG and relevant components [m].
 dist.wing2COG = D.Comp{"Wings",           "COG"} - D.Plane.COG;  % TODO: verify that MAC is at wing COG.
 dist.HT2COG   = D.Comp{"Horizontal tail", "COG"} - D.Plane.COG;
-dist.VT2COG   = D.Comp{"Vertical tail",   "COG"} - D.Plane.COG;
 dist.E2COG    = D.Comp{"Engine",          "COG"} - D.Plane.COG;
 
 % Solve aircraft dynamic equilibrium for each CP.
@@ -108,10 +107,7 @@ end
 		D_body  = 0.5 * rho * TAS^2 * D.Wing.surf * CD_body;  % TODO: check if wing surf or plane wetted surf.
 
 		% Pitching moment [N*m].
-		% This formula does not apply to our geometry.
-		% C_M_0 = -0.1;
-		% K_n   = 0.09;
-		% C_M   = C_M_0 - K_n * D.Wing.CL_max - 0.0015 * psi_max;
+		% Only take into account the wing pitching moment.
 		cm = D.Wing.airfoil.cm;
 		M  = 0.5 * rho * TAS^2 * D.Wing.surf * D.Wing.smc * cm;
 
@@ -156,16 +152,15 @@ end
 		L_res   = double(res.L);
 		P_res   = double(res.P);
 
-		% Lift curve slope of the vertical tail.
+		% Lift curve slope of the vertical tail [1/rad].
 		VT_a = 5.5 * D.VT.AR / (D.VT.AR + 2);
 
-		% Lift of the vertical tail.
+		% Lift of the vertical tail [N].
 		F_fin = 0.5 * rho * EAS^2 * VT_a * D.HT.surf * psi_max;
 
-		% NOTE: no need to take into account the M_tail.
-
-		% Fuselage bending moment.
-		M_fus = F_fin * dist.VT2COG(1);
+		% Fuselage bending moment [N*m].
+		% No need to take into account the M_tail.
+		M_fus = F_fin * D.VT.y;  % TODO: verify that using D.VT.y is correct.
 
 		% Return the computed loads.
 		loads = table(n, aoa_res, L_res, P_res, F_fin, M_fus);
