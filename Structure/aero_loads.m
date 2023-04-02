@@ -85,7 +85,7 @@ end
 		%   n   (double) -- CP load factor.
 		%   EAS (double) -- CP equivalent airspeed, in [m/s].
 		% Return:
-		%   Sol (1x6 table) -- Solution of the dynamic equilibrium.
+		%   loads (1x6 table) -- Solution of the dynamic equilibrium.
 
 		% Retrieve the true airspeed.
 		TAS = EAS / TAS2EAS;
@@ -116,7 +116,7 @@ end
 		M  = 0.5 * rho * TAS^2 * D.Wing.surf * D.Wing.smc * cm;
 
 		% Plane inertia along Y-axis [kg*m²].
-		I_theta = 3000;  % TODO: to be computed with the CAD.
+		I_theta = sum(D.Comp.Mass .* vecnorm(D.Comp.COG - D.Plane.COG, 2, 2).^2);
 
 		% Angle of attack, wing lift and HT lift are coupled through three
 		% equations:
