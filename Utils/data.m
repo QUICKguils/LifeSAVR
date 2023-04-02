@@ -181,13 +181,13 @@ Comp("Sensor growth",               :) = {15,        [1.5,    0.0000, 0.0000]};
 Comp.Properties.VariableNames = {'Mass', 'COG'};
 
 % Convert weights from lb to kg.
-Comp.Mass = array2table(Comp.Mass .* C.lb2kg);
+Comp.Mass = Comp.Mass .* C.lb2kg;
 
 %% Plane
 
-Plane.MTOW  = sum(Comp.Mass);                         % MTOW [kg].
-Plane.COG = sum(Comp.Mass .* Comp.COG) / Plane.MTOW;  % COG [m].
-Plane.CD_0  = 0.017;                                  % Zero lift drag coefficient.
+Plane.MTOW  = sum(Comp.Mass);                           % MTOW [kg].
+Plane.COG   = sum(Comp.Mass .* Comp.COG) / Plane.MTOW;  % COG [m].
+Plane.CD_0  = 0.017;                                    % Zero lift drag coefficient.
 
 %% Write in data.mat
 
