@@ -196,10 +196,10 @@ function [R, W_empty_R, W_nofuel_R, W_dry_R, W_tot_R] = payload_range(condition,
 	% - Increase W_fuel_vol_1 from 0 to W_fuel_vol.
 	R_1   = zeros(1, nsample);
 	% Incremental weights.
-	W_empty_1    = linspace(W_empty,    W_empty,    nsample);
-	W_payload_1  = linspace(C.W_payload,  C.W_payload,  nsample);
-	W_fuel_dry_1 = linspace(W_fuel_dry, W_fuel_dry, nsample);
-	W_fuel_vol_1 = linspace(0,          W_fuel_vol, nsample);
+	W_empty_1    = linspace(W_empty,     W_empty,     nsample);
+	W_payload_1  = linspace(C.W_payload, C.W_payload, nsample);
+	W_fuel_dry_1 = linspace(W_fuel_dry,  W_fuel_dry,  nsample);
+	W_fuel_vol_1 = linspace(0,           W_fuel_vol,  nsample);
 	% Total weights.
 	W_nofuel_1 = W_empty_1  + W_payload_1;
 	W_dry_1    = W_nofuel_1 + W_fuel_dry_1;
@@ -211,10 +211,10 @@ function [R, W_empty_R, W_nofuel_R, W_dry_R, W_tot_R] = payload_range(condition,
 	% - Constant FW = MWF.
 	R_2   = zeros(1, nsample);
 	% Incremental weights.
-	W_empty_2    = linspace(W_empty,    W_empty,    nsample);
-	W_payload_2  = linspace(C.W_payload,  0,          nsample);
-	W_fuel_dry_2 = linspace(W_fuel_dry, W_fuel_dry, nsample);
-	W_fuel_vol_2 = linspace(W_fuel_vol, W_fuel_vol, nsample);
+	W_empty_2    = linspace(W_empty,     W_empty,    nsample);
+	W_payload_2  = linspace(C.W_payload, 0,          nsample);
+	W_fuel_dry_2 = linspace(W_fuel_dry,  W_fuel_dry, nsample);
+	W_fuel_vol_2 = linspace(W_fuel_vol,  W_fuel_vol, nsample);
 	% Total weights.
 	W_nofuel_2 = W_empty_2  + W_payload_2;
 	W_dry_2    = W_nofuel_2 + W_fuel_dry_2;
