@@ -10,7 +10,7 @@ function structural_loads(AeroLoads)
 % Aircraft Structures>lesson 6>slides 26 to 39.
 %
 % Argument:
-%   AeroLoads: table
+%   AeroLoads: 5x6 table
 %	  Aerodynamic loads exerting on the wings, fuselage and tail, for
 %	  all the critical points of the flight envelope.
 %     This table is returned by Structure/loads_aero.m.
