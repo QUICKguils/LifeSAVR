@@ -28,7 +28,7 @@ addpath(genpath(fullfile(fileparts(mfilename("fullpath")), "../Utils")));
 [~, p,    ~, a] = ISA(h);
 [~, p_sl, ~, ~] = ISA(0);
 
-% Retrieve Mach number, for the given flight condition (TAS, h).
+% Retrieve Mach number.
 M = TAS / a;
 
 % Preterms computation.

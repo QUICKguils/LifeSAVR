@@ -16,15 +16,15 @@
 function pr_diagram(condition, opts)
 % PR_DIAGRAM  Plot of the payload-range diagram.
 %
-% Parameter:
+% Arguments:
 %	condition: char {'s'|'r'}, optional
-%		Specify the choice of flight condition.
-%		's' -> PR diagram for maximum speed.
-%		'r' -> PR diagram for maximum range.
+%	  Specify the choice of flight condition.
+%	  's' -> PR diagram for maximum speed.
+%	  'r' -> PR diagram for maximum range.
 %	opts: char {'p'|'w'}, optional
-%		'p' -> Enable plots creation.
-%		'w' -> Write data in external file.
-%		'i' -> use the imperial system of units (abbr. ISoU).
+%	  'p' -> Enable plots creation.
+%	  'w' -> Write data in external file.
+%	  'i' -> use the imperial system of units (abbr. ISoU).
 
 %% Imports
 

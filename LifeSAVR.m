@@ -4,10 +4,10 @@
 function LifeSAVR(opts)
 % LIFESAVR  triggers all the code of the project.
 %
-% Parameter:
+% Argument:
 %	opts: char {'p', 'w'}, optional
-%		'p' -> Enable plots creation.
-%		'w' -> Write plotting data in external file.
+%	  'p' -> Enable plots creation.
+%	  'w' -> Write plotting data in external file.
 
 %% Set path and global MAT files
 
@@ -25,7 +25,7 @@ data();
 
 %% Options setting
 
-% Option defaults: generate the plots, in ISoU.
+% Option defaults: generate the plots.
 if ~nargin
 	opts = 'p';
 end
@@ -44,8 +44,5 @@ propulsion();
 flight_envelope(C.h_cr, opts);
 % loads_aero();
 % loads_structural();
-
-% Debug print.
-disp("LifeSAVR execution: OK");
 
 end

@@ -7,13 +7,10 @@
 function placard_diagram(opts)
 % PLACARD_DIAGRAM  Altitude-velocity dependency.
 %
-% Parameters:
+% Arguments:
 %	opts: char {'p'|'w'}, optional
-%		'p' -> Enable plots creation.
-%		'w' -> Write data in external file.
-%
-% Example:
-%   placard_diagram('pw') % Create plots and write data to file.
+%	  'p' -> Enable plots creation.
+%	  'w' -> Write data in external file.
 
 % Se w default opts to 'p' (plot, but do not write).
 if nargin == 0

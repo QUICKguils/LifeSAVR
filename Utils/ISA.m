@@ -1,9 +1,9 @@
 function [rho, p, T, a] = ISA(h)
 % ISA  International standard atmosphere.
 %
-% Returns useful flow properties for the given altitude, in meter.
+% Returns useful flow properties for the given altitude.
 %
-% Parameter:
+% Argument:
 %	h: double
 %	  Altitude, in meter.
 % Return:

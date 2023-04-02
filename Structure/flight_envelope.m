@@ -2,10 +2,10 @@ function flight_envelope(h, opts)
 % FLIGHT_ENVELOPE  Build the flight envelope.
 %
 % Arguments:
-%	h: double, optional.
+%	h: double, optional
 %	  Altitude at which the flight envelope is desired, in meter.
 %     Default is the cruise altitude.
-%	opts: char {'p', 'w'}, optional.
+%	opts: char {'p', 'w'}, optional
 %	  'p' -> Enable plots creation.
 %	  'w' -> Write plotting data in external file.
 %     Default is 'p'.
