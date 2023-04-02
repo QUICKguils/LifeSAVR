@@ -14,11 +14,11 @@ function Loads = aero_loads(h)
 % found at:
 % Aircraft Structures>lesson 6>slides 11 to 25.
 %
-% Parameter:
+% Argument:
 %   h: double
 %	  Altitude at which the flight envelope is desired, in meter.
-% Argument:
-%   AeroLoads: table
+% Return:
+%   Loads: 5x6 table
 %	  Aerodynamic loads exerting on the wings, fuselage and tail, for
 %	  all the critical points of the flight envelope.
 
@@ -60,11 +60,10 @@ Loads = table(...
 	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double'});
 
 % Distances bewteen airplane COG and relevant components [m].
-Plane_COG     = [D.Plane.COG_x, D.Plane.COG_z];
-dist.wing2COG = D.Comp{"Wings",           ["COG_x", "COG_z"]} - Plane_COG;  % TODO: verify that MAC is at wing COG.
-dist.HT2COG   = D.Comp{"Horizontal tail", ["COG_x", "COG_z"]} - Plane_COG;
-dist.VT2COG   = D.Comp{"Vertical tail",   ["COG_x", "COG_z"]} - Plane_COG;
-dist.T2COG    = D.Comp{"Engine",          ["COG_x", "COG_z"]} - Plane_COG;
+dist.wing2COG = D.Comp{"Wings",           "COG"} - D.Plane.COG;  % TODO: verify that MAC is at wing COG.
+dist.HT2COG   = D.Comp{"Horizontal tail", "COG"} - D.Plane.COG;
+dist.VT2COG   = D.Comp{"Vertical tail",   "COG"} - D.Plane.COG;
+dist.E2COG    = D.Comp{"Engine",          "COG"} - D.Plane.COG;
 
 % Solve aircraft dynamic equilibrium for each CP.
 % Write the results in Loads.
@@ -75,9 +74,9 @@ for idx = 1:height(CP)
 	Loads(idx, :) = loads;
 end
 
-%% Solve aircraft dynamic equilibrium for the given CP.
+%% Solve aircraft dynamic equilibrium for the given CP
 
-	function Sol = solve_loads(n, EAS)
+	function loads = solve_loads(n, EAS)
 		% SOLVE_LOADS  Solve aircraft dynamic equilibrium for the given CP.
 		%
 		% Arguments:
@@ -122,25 +121,35 @@ end
 		% - wing lift,
 		% - vertical dynamic equilibrium, and
 		% - moments equilibrium around the plane COG.
-		% We solve this system numerically, thanks to vpasolve().
-		aoa   = sym('aoa');
-		L     = sym('L');
-		P     = sym('P');
-		dx_w  = sym('dx_w');
-		dz_w  = sym('dz_w');
-		dx_HT = sym('dx_HT');
-		dz_b  = sym('dz_b');
+		% Note that, for the moments equilibrium, the lever arms depend on
+		% the angle of attack. This adds 4 more equations to the system.
+		%
+		% Define symbolic variables.
+		aoa   = sym('aoa');    % Angle of attack [°].
+		aoi   = sym('aoi');    % Angle of incidence [°].
+		L     = sym('L');      % Lift from the wing [N].
+		P     = sym('P');      % Lift from the horizontal tail [H].
+		dx_w  = sym('dx_w');   % X-distance from airplaine COG to wing   COG, absolute axis [m].
+		dz_w  = sym('dz_w');   % Z-distance from airplaine COG to wing   COG, absolute axis [m].
+		dx_HT = sym('dx_HT');  % X-distance from airplaine COG to HT     COG, absolute axis [m].
+		dz_b  = sym('dz_b');   % Z-distance from airplaine COG to body   COG, absolute axis [m].
+		% Define system of equations.
+		% TODO: check aoi of the HT tail.
 		eqns = [ ...
-			L == 0.5 * C.rho_cr * TAS^2 * D.Wing.surf * D.Wing.CL_alpha * aoa, ...
-			L + P == n*W - T*sind(aoa - D.Wing.aoi), ...
-			L*dx_w - T*dist.T2COG(2) + D_body*dz_b + D_wing*dz_w + P*dx_HT + M == I_theta * theta_dd, ...
-			dx_w  == cosd(aoa) * dist.wing2COG(1) - sind(aoa) * dist.wing2COG(2), ...
-			dz_w  == sind(aoa) * dist.wing2COG(1) + cosd(aoa) * dist.wing2COG(2), ...
-			dx_HT == cosd(aoa) * dist.HT2COG(1)   - sind(aoa) * dist.HT2COG(2), ...
+			L == 0.5 * rho * TAS^2 * D.Wing.surf * D.Wing.CL_alpha * deg2rad(aoa), ...
+			L + P == n*W - T*sind(aoi), ...
+			I_theta * theta_dd == - L*dx_w + D_wing*dz_w + D_body*dz_b - P*dx_HT - T*dist.E2COG(3) + M, ...
+			dx_w  ==   cosd(aoi) * dist.wing2COG(1) + sind(aoi) * dist.wing2COG(3), ...
+			dz_w  == - sind(aoi) * dist.wing2COG(1) + cosd(aoi) * dist.wing2COG(3), ...
+			dx_HT ==   cosd(aoi) * dist.HT2COG(1)   + sind(aoi) * dist.HT2COG(3), ...
 			dz_b  == 0, ...  % TODO: Verify if this is valid.
+			aoi == aoa - D.Wing.aoi, ...
 		];
 		% Solve the system.
-		res = vpasolve(eqns, [aoa, L, P, dx_w, dz_w, dx_HT, dz_b]);
+		res = vpasolve(...
+			eqns, ...
+			[aoa, L, P, dx_w,             dz_w,             dx_HT,          dz_b, aoi], ...
+			[5,   W, 0, dist.wing2COG(1), dist.wing2COG(3), dist.HT2COG(1), 0,    5]);
 		% Unpack the results of interest.
 		aoa_res = double(res.aoa);
 		L_res   = double(res.L);
@@ -158,6 +167,6 @@ end
 		M_fus = F_fin * dist.VT2COG(1);
 
 		% Return the computed loads.
-		Sol = table(n, aoa_res, L_res, P_res, F_fin, M_fus);
+		loads = table(n, aoa_res, L_res, P_res, F_fin, M_fus);
 	end
 end
