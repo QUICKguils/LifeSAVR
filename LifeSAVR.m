@@ -5,9 +5,10 @@ function LifeSAVR(opts)
 % LIFESAVR  triggers all the code of the project.
 %
 % Argument:
-%	opts: char {'p', 'w'}, optional
+%	opts: char {'p', 'w', 'i'}, optional. Default is 'pi'.
 %	  'p' -> Enable plots creation.
 %	  'w' -> Write plotting data in external file.
+%     'i' -> Plot and write data with imperial system of units (abbr. ISoU).
 
 %% Set path and global MAT files
 
@@ -25,9 +26,9 @@ data();
 
 %% Options setting
 
-% Option defaults: generate the plots.
+% Option defaults: generate the plots, in ISoU.
 if ~nargin
-	opts = 'p';
+	opts = 'pi';
 end
 
 %% Execute the code
@@ -38,11 +39,12 @@ C = load(fullfile(root_dir, "constants.mat"));
 
 % Propulsion.
 propulsion();
-% pr_diagram();
+%pr_diagram('s', opts);
 
 % Structure.
 flight_envelope(C.h_cr, opts);
-% loads_aero();
-% loads_structural();
+aero_loads();
+%struct_loads();
+%struct_stress();
 
 end
