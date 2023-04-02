@@ -1,7 +1,9 @@
 % TODO:
-% - Rework pos and d naming.
-% - Rotation matrix with vpasolve.
-% - Implement vpasolve more idiomatically.
+% - Check aoi of the HT tail, it's probably different that for the wing.
+% - D.Propu.T_sls should not be used for every CP.
+% - Rework distances naming convention.
+% - Try to define syms variables in the main function scope, for speed.
+% - Implement vpasolve more idiomatically. Maybe rotation matrix for distances.
 % - Wait for more precise CAD values.
 
 function Loads = aero_loads(h)
@@ -70,7 +72,7 @@ dist.E2COG    = D.Comp{"Engine",          "COG"} - D.Plane.COG;
 for idx = 1:height(CP)
 	n   = CP{idx, 'n'};
 	EAS = CP{idx, 'EAS'};
-	loads = solve_loads(n, EAS);  % TODO: check if syms defs and vpasolve are ok to loop.
+	loads = solve_loads(n, EAS);
 	Loads(idx, :) = loads;
 end
 
@@ -129,12 +131,11 @@ end
 		aoi   = sym('aoi');    % Angle of incidence [°].
 		L     = sym('L');      % Lift from the wing [N].
 		P     = sym('P');      % Lift from the horizontal tail [H].
-		dx_w  = sym('dx_w');   % X-distance from airplaine COG to wing   COG, absolute axis [m].
-		dz_w  = sym('dz_w');   % Z-distance from airplaine COG to wing   COG, absolute axis [m].
-		dx_HT = sym('dx_HT');  % X-distance from airplaine COG to HT     COG, absolute axis [m].
-		dz_b  = sym('dz_b');   % Z-distance from airplaine COG to body   COG, absolute axis [m].
+		dx_w  = sym('dx_w');   % X-distance from airplaine COG to wing COG, absolute axis [m].
+		dz_w  = sym('dz_w');   % Z-distance from airplaine COG to wing COG, absolute axis [m].
+		dx_HT = sym('dx_HT');  % X-distance from airplaine COG to HT   COG, absolute axis [m].
+		dz_b  = sym('dz_b');   % Z-distance from airplaine COG to body COG, absolute axis [m].
 		% Define system of equations.
-		% TODO: check aoi of the HT tail.
 		eqns = [ ...
 			L == 0.5 * rho * TAS^2 * D.Wing.surf * D.Wing.CL_alpha * deg2rad(aoa), ...
 			L + P == n*W - T*sind(aoi), ...
@@ -148,8 +149,8 @@ end
 		% Solve the system.
 		res = vpasolve(...
 			eqns, ...
-			[aoa, L, P, dx_w,             dz_w,             dx_HT,          dz_b, aoi], ...
-			[5,   W, 0, dist.wing2COG(1), dist.wing2COG(3), dist.HT2COG(1), 0,    5]);
+			[aoa, L,   P, dx_w,             dz_w,             dx_HT,          dz_b, aoi], ...
+			[5,   n*W, 0, dist.wing2COG(1), dist.wing2COG(3), dist.HT2COG(1), 0,    5]);
 		% Unpack the results of interest.
 		aoa_res = double(res.aoa);
 		L_res   = double(res.L);
