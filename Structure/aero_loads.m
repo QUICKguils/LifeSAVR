@@ -1,4 +1,5 @@
 % TODO:
+% - It's weird that P negative.
 % - Check aoi of the HT tail, it's probably different that for the wing.
 % - D.Propu.T_sls should not be used for every CP.
 % - Rework distances naming convention.
@@ -152,14 +153,14 @@ end
 		L_res   = double(res.L);
 		P_res   = double(res.P);
 
-		% Lift curve slope of the vertical tail [1/rad].
+		% Lift curve slope of the vertical tail [1/rad].  % TODO: make sure of units.
 		VT_a = 5.5 * D.VT.AR / (D.VT.AR + 2);
 
 		% Lift of the vertical tail [N].
 		F_fin = 0.5 * rho * EAS^2 * VT_a * D.HT.surf * psi_max;
 
 		% Fuselage bending moment [N*m].
-		% No need to take into account the M_tail.
+		% No need to take into account the M_tail.  % TODO: not sure of that: M_tail does not seems negligible.
 		M_fus = F_fin * D.VT.y;  % TODO: verify that using D.VT.y is correct.
 
 		% Return the computed loads.
