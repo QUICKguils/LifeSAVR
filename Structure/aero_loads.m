@@ -7,7 +7,7 @@
 % - Implement vpasolve more idiomatically. Maybe rotation matrix for distances.
 % - Wait for more precise CAD values.
 
-function Loads = aero_loads(h)
+function aero_loads(h)
 % LOADS_AERO  Aerodynamic loads.
 %
 % This function computes the aerodynamic loads exerting on the wings,
@@ -20,8 +20,8 @@ function Loads = aero_loads(h)
 % Argument:
 %   h: double
 %	  Altitude at which the flight envelope is desired, in meter.
-% Return:
-%   Loads: 5x6 table
+% Save:
+%   AeroLoads: 5x6 table
 %	  Aerodynamic loads exerting on the wings, fuselage and tail, for
 %	  all the critical points of the flight envelope.
 
@@ -57,7 +57,7 @@ psi_max  = deg2rad(15);  % Maximum yaw angle allowed [rad].
 
 % The return value consists of a table
 % that contains the computed aerodynamic loads for all the CP.
-Loads = table(...
+AeroLoads = table(...
 	'Size', [height(CP), 6], ...
 	'VariableNames', {'n',      'aoa',    'L',      'P',      'F_fin',  'M_fus'}, ...
 	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double'});
@@ -73,8 +73,11 @@ for idx = 1:height(CP)
 	n   = CP{idx, 'n'};
 	EAS = CP{idx, 'EAS'};
 	loads = solve_loads(n, EAS);
-	Loads(idx, :) = loads;
+	AeroLoads(idx, :) = loads;
 end
+
+% Save Loads in data.mat.
+save(fullfile(file_dir, "../data.mat"), "AeroLoads", "-append");
 
 %% Solve aircraft dynamic equilibrium for the given CP
 
@@ -127,7 +130,7 @@ end
 		aoa   = sym('aoa');    % Angle of attack [°].
 		aoi   = sym('aoi');    % Angle of incidence [°].
 		L     = sym('L');      % Lift from the wing [N].
-		P     = sym('P');      % Lift from the horizontal tail [H].
+		P     = sym('P');      % Lift from the horizontal tail [N].
 		dx_w  = sym('dx_w');   % X-distance from airplaine COG to wing COG, absolute axis [m].
 		dz_w  = sym('dz_w');   % Z-distance from airplaine COG to wing COG, absolute axis [m].
 		dx_HT = sym('dx_HT');  % X-distance from airplaine COG to HT   COG, absolute axis [m].
@@ -157,7 +160,7 @@ end
 		VT_a = 5.5 * D.VT.AR / (D.VT.AR + 2);
 
 		% Lift of the vertical tail [N].
-		F_fin = 0.5 * rho * EAS^2 * VT_a * D.HT.surf * psi_max;
+		F_fin = 0.5 * rho * EAS^2 * VT_a * D.VT.surf * psi_max;
 
 		% Fuselage bending moment [N*m].
 		% No need to take into account the M_tail.  % TODO: not sure of that: M_tail does not seems negligible.
