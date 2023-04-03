@@ -58,9 +58,9 @@ psi_max  = deg2rad(15);  % Maximum yaw angle allowed [rad].
 % The return value consists of a table
 % that contains the computed aerodynamic loads for all the CP.
 AeroLoads = table(...
-	'Size', [height(CP), 6], ...
-	'VariableNames', {'n',      'aoa',    'L',      'P',      'F_fin',  'M_fus'}, ...
-	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double'});
+	'Size', [height(CP), 7], ...
+	'VariableNames', {'n',      'EAS',    'aoa',    'L',      'P',      'F_fin',  'M_fus'}, ...
+	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double', 'double'});
 
 % Distances bewteen airplane COG and relevant components [m].
 dist.wing2COG = D.Comp{"Wings",           "COG"} - D.Plane.COG;  % TODO: verify that MAC is at wing COG.
@@ -160,13 +160,13 @@ save(fullfile(file_dir, "../data.mat"), "AeroLoads", "-append");
 		VT_a = 5.5 * D.VT.AR / (D.VT.AR + 2);
 
 		% Lift of the vertical tail [N].
-		F_fin = 0.5 * rho * EAS^2 * VT_a * D.VT.surf * psi_max;
+		F_fin = 0.5 * rho * EAS^2 * D.VT.surf * VT_a * psi_max;
 
 		% Fuselage bending moment [N*m].
 		% No need to take into account the M_tail.  % TODO: not sure of that: M_tail does not seems negligible.
 		M_fus = F_fin * D.VT.y;  % TODO: verify that using D.VT.y is correct.
 
 		% Return the computed loads.
-		loads = table(n, aoa_res, L_res, P_res, F_fin, M_fus);
+		loads = table(n, EAS, aoa_res, L_res, P_res, F_fin, M_fus);
 	end
 end
