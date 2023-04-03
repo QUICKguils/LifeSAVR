@@ -16,9 +16,6 @@ function [SLSconv] = thrust_SLSconv(TAS, h, BPR, G)
 % Return:
 %   SLSconv (double) -- Thrust conversion factor.
 
-% Make Utils/ISA visible.
-addpath(genpath(fullfile(fileparts(mfilename("fullpath")), "../Utils")));
-
 % NOTE:
 % This function don't load constants.mat. We keep it independent of any
 % global data, for efficiency reasons. Indeed, loading MAT files is

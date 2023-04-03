@@ -66,7 +66,7 @@ FE.contour = ME.contour;
 FE.CP      = ME.CP;
 FE.speed   = Speeds;
 
-% Save FE in data.mat, which lies in the root directory.
+% Save FE in data.mat.
 save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 
 %% Stall line points

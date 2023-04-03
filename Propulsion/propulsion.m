@@ -39,7 +39,10 @@ file_dir = fileparts(mfilename("fullpath"));
 
 % Constants and aircraft data.
 C = load(fullfile(file_dir, "../constants.mat"));
-load(fullfile(file_dir, "../data.mat"), "Wing", "Plane");
+D = load(fullfile(file_dir, "../data.mat"));
+
+% Utilities.
+addpath(genpath(fullfile(file_dir, "../Utils")));
 
 %% Engine selection
 
@@ -78,13 +81,13 @@ engine = table2struct(engine_table("FJ44-4A", :));
 % e_straight = 1.78 * (1 - 0.045*AR^0.68)                     - 0.64;
 % e_swept    = 4.61 * (1 - 0.045*AR^0.68) * cosd(Lambda)^0.15 - 3.1;
 % % Linear interpolation for a sweep angle of Lambda.
-% e = e_straight + (e_swept - e_straight)/30 * Wing.sweep;
+% e = e_straight + (e_swept - e_straight)/30 * D.Wing.sweep;
 
 % Estimation of the drag coefficient.
-Cd = Plane.CD_0 + Wing.CL_cr^2 / (Wing.e * pi * Wing.AR);
+Cd = D.Plane.CD_0 + D.Wing.CL_cr^2 / (D.Wing.e * pi * D.Wing.AR);
 
 % Thrust at cruise must equal the drag [N].
-F_cr = 0.5 * C.rho_cr * C.V_cr^2 * Wing.surf * Cd;
+F_cr = 0.5 * C.rho_cr * C.V_cr^2 * D.Wing.surf * Cd;
 
 %% Cruise thrust to uninstalled thrust
 % The uninstalled thrust corresponds to the thrust measured in lab
@@ -100,10 +103,7 @@ F_cr = 0.5 * C.rho_cr * C.V_cr^2 * Wing.surf * Cd;
 % -> We can have a first guesstimate of 0.8 for the value of G. This
 % corresponds to a quite small BPR engine.
 % Teams>Propulsion>Files>Sources>Bartel-SFC_Calculations.pdf (page 8)
-BPR = engine.BPR;
-G = engine.G;
-
-SLS2cr = thrust_SLSconv(C.V_cr, C.h_cr, BPR, G);
+SLS2cr = thrust_SLSconv(C.V_cr, C.h_cr, engine.BPR, engine.G);
 F_sls = F_cr / SLS2cr;
 
 % Installed thrust [N].
@@ -116,8 +116,7 @@ F_installed = F_sls * (1 + safety_thrust);
 % Thrust to weight ratio.
 % The MTOW is conventionally expressed in [kg] and thus need to be
 % converted in [N].
-MTOW_force = Plane.MTOW * C.g;
-TW_ratio = F_installed / MTOW_force;
+TW_ratio = F_installed / (D.Plane.MTOW * C.g);
 
 % Uninstalled thrust [N].
 % Lab geometrical conditions: assume optimistic configuration.
@@ -146,7 +145,7 @@ F_c = engine.Thrust * (1 - install_loss) / (1 + safety_thrust) * SLS2cr;
 
 % Design cruise speed [m/s].
 % Obtained through the thrust-drag equality.
-V_c = sqrt(F_c / (0.5 * C.rho_cr * Wing.surf * Cd));
+V_c = sqrt(F_c / (0.5 * C.rho_cr * D.Wing.surf * Cd));
 
 % Design cruise and dive mach numbers.
 M_c = V_c / C.a_cr;
@@ -175,7 +174,7 @@ safety_bad_engine = 5e-2;
 safety_trapped_fuel = 1e-2;
 
 % Estimation of the thrust needed at loiter [N].
-F_loiter = 0.5 * C.rho_cr * C.V_loiter^2 * Wing.surf * Cd;
+F_loiter = 0.5 * C.rho_cr * C.V_loiter^2 * D.Wing.surf * Cd;
 
 % Summing amout of fuel required for all the mission steps [kg].
 W_fuel = ...
@@ -183,11 +182,11 @@ W_fuel = ...
 	* (1+safety_bad_engine+safety_trapped_fuel) ...
 	* (  F_loiter * SFC_loiter * C.t_loiter_search ...
 	   + F_loiter * SFC_loiter * C.t_loiter_landing ...
-	   + F_cr * SFC_cruise * (C.range_egress/C.V_cr) ...
-	   + F_cr * SFC_cruise * (C.range_ingress/C.V_cr));
+	   + F_cr     * SFC_cruise * (C.range_egress/C.V_cr) ...
+	   + F_cr     * SFC_cruise * (C.range_ingress/C.V_cr));
 
 % Fuel weight ratio.
-FW_ratio = W_fuel / Plane.MTOW;
+FW_ratio = W_fuel / D.Plane.MTOW;
 
 % Rough idea of the jet-A fuel density [kg/m³].
 % Wikipedia>"Jet fuel"
