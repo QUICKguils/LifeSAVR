@@ -21,7 +21,7 @@ function aero_loads(h)
 %   h: double
 %	  Altitude at which the flight envelope is desired, in meter.
 % Save:
-%   AeroLoads: 5x6 table
+%   AeroLoads: 5x7 table
 %	  Aerodynamic loads exerting on the wings, fuselage and tail, for
 %	  all the critical points of the flight envelope.
 
@@ -68,7 +68,7 @@ dist.HT2COG   = D.Comp{"Horizontal tail", "COG"} - D.Plane.COG;
 dist.E2COG    = D.Comp{"Engine",          "COG"} - D.Plane.COG;
 
 % Solve aircraft dynamic equilibrium for each CP.
-% Write the results in Loads.
+% Write the results in AeroLoads.
 for idx = 1:height(CP)
 	n   = CP{idx, 'n'};
 	EAS = CP{idx, 'EAS'};

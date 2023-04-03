@@ -1,4 +1,4 @@
-function [SLSconv] = thrust_SLSconv(TAS, h, BPR, G)
+function SLSconv = thrust_SLSconv(TAS, h, BPR, G)
 % THRUST_SLSCONV  Conversion factor from sea level, static (SLS) thrust.
 %
 % This function provides the factor to make the conversion between the
@@ -15,11 +15,6 @@ function [SLSconv] = thrust_SLSconv(TAS, h, BPR, G)
 %   G   (double) -- Gas generator function.
 % Return:
 %   SLSconv (double) -- Thrust conversion factor.
-
-% NOTE:
-% This function don't load constants.mat. We keep it independent of any
-% global data, for efficiency reasons. Indeed, loading MAT files is
-% too penalizing for such a small routine.
 
 % Compute air properties at altitude h and at sea level.
 [~, p,    ~, a] = ISA(h);
