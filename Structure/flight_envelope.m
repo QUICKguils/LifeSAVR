@@ -50,7 +50,7 @@ TAS2EAS = sqrt(rho/C.rho_sl);  % Conversion from true airspeed to equivalent air
 V_c = D.Propu.M_c * a;         % Design cruise speed [m/s].
 V_d = D.Propu.M_d * a;         % Design dive   speed [m/s].
 
-% Stall line: true airspeed at max lift, for the given load factor.
+% Stall line: TAS at max lift, for the given load factor [m/s].
 tas_max_lift = @(n) sqrt(2*abs(n)*D.Plane.MTOW*C.g / (rho*D.Wing.surf*D.Wing.CL_max));
 
 % Build the flight envelope.
@@ -230,7 +230,7 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 		% DESIGN_SPEEDS  Retrieve the relevant design EAS.
 		%
 		%   All the design speeds returned by this function have already been
-		%   calculated. This function just nicely pack them in a dictionary.
+		%   calculated. This function just nicely pack them in a table.
 
 		EAS_S = tas_max_lift(1) * TAS2EAS;  % Stall speed at n = 1 (cruise).
 		EAS_A = ME.CP{1, 'EAS'};            % Stall speed at n = n_up.
@@ -238,9 +238,9 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 		EAS_C = V_c * TAS2EAS;              % Design cruise speed.
 		EAS_D = V_d * TAS2EAS;              % Design dive speed.
 
-		Speeds = dictionary(...
-			["S",   "A",   "B",   "C",   "D"], ...
-			[EAS_S, EAS_A, EAS_B, EAS_C, EAS_D]);
+		Speeds = table(...
+			["S",   "A",   "B",   "C",   "D"]', ...
+			[EAS_S, EAS_A, EAS_B, EAS_C, EAS_D]');
 	end
 %% Plot envelope
 
