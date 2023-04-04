@@ -50,13 +50,11 @@ wings_loads();
 		l_rear_fuselage = L_fuselage - x_rear_fuselage;
 		W_rear_fuselage = l_rear_fuselage * Weight(1) * C.g;
 
-
 		l_tail_fin = CG_x(15) - x_rear_fuselage;
 		W_tail_fin = (Weight(14) + Weight(15))*C.g;
 
 		l_engine = CG_x(20) - x_rear_fuselage;
 		W_engine = Weight(20)*C.g;
-
 
 		x_dd = L_fuselage - x_rear_fuselage;
 		x_bb = (CG_x(20) - L_engine/2) - x_rear_fuselage;  %beginning of the engine
@@ -82,20 +80,17 @@ wings_loads();
 			SF_B(i) = n(i)*(W_mdd*(l_rear_fuselage-x_bb) + (W_mcc-W_mdd)*(l_rear_fus-x_cc)/2 + W_tail_fin + W_engine);
 			BM_B(i) = n(i)*cos(deg2rad(result_alpha(i))-0.0159)*((l_rear_fuselage-x_bb)^2/2*W_mdd + (l_rear_fuselage-x_bb)^2/6*(W_mbb-W_mdd)+ (l_tail_fin-x_bb)*W_tail_fin * (l_engine-x_bb)*W_engine);
 
-
 			Ty_aa(i) = -F_fin(i);
 			Tz_aa(i) = -(SF_A(i) - result_L_t(i))*cos(deg2rad(result_alpha(i))-0.0159);
 			My_aa(i) = BM_A(i) - result_L_t(i)*l_tail_fin*cos(deg2rad(result_alpha(i))-0.0159);
 			Mz_aa(i) = F_fin(i)*l_tail_fin;
 			Mx_section_aa(i) = -F_fin(i)*abs(CG_z(14));
 
-
 			Ty_cc(i) = -F_fin(i);
 			Tz_cc(i) = -(SF_C(i) - result_L_t(i))*cos(deg2rad(result_alpha(i))-0.0159);
 			My_cc(i) = BM_C(i) - result_L_t(i)*(l_tail_fin-x_cc)*cos(deg2rad(result_alpha(i))-0.0159);
 			Mz_cc(i) = F_fin(i)*(l_tail_fin-x_cc);
 			Mx_section_cc(i) = - F_fin(i)*abs(CG_z(14));
-
 
 			Ty_bb(i) = -F_fin(i);
 			Tz_bb(i) = -(SF_B(i) - result_L_t(i))*cos(deg2rad(result_alpha(i))-0.0159);
@@ -126,7 +121,6 @@ wings_loads();
 		y_pos_hyd = y_bar_w;
 
 		for i = 1:length(V_points)
-
 			SW_x(i) = (n_points(i)*(W_Wing + W_fuel + W_hyd) - result_L_w(i)/2)*sin(result_alpha(i)) + D_w(i)*cos(result_alpha(i));
 			SW_y(i) = 0;
 			SW_z(i) = (-n_points(i)*(W_Wing + W_fuel + W_hyd) + result_L_w(i)/2)*cos(result_alpha(i)) + D_w(i)*sin(result_alpha(i));
@@ -134,7 +128,6 @@ wings_loads();
 			BM_x(i) = (-n_points(i)*(W_Wing*y_pos_Wing + W_fuel*y_pos_fuel + W_hyd*y_pos_hyd) - result_L_w(i)/2*y_pos_Wing)*cos(result_alpha(i)) + D_w(i)*y_pos_hyd*sin(result_alpha(i));
 			BM_y(i) = (-n_points(i)*(W_Wing*x_pos_Wing + W_fuel*x_pos_fuel + W_hyd*x_pos_hyd) - result_L_w(i)/2*x_pos_Wing + D_w(i)/2*x_pos_Wing)*cos(result_alpha(i)) + (-n_points(i)*(W_Wing*z_pos_Wing + W_fuel*z_pos_fuel + W_hyd*z_pos_hyd) - result_L_w(i)/2*z_pos_Wing - D_w(i)/2*z_pos_Wing)*sin(result_alpha(i));
 			BM_z(i) = (-n_points(i)*(W_Wing*y_pos_Wing + W_fuel*y_pos_fuel + W_hyd*y_pos_hyd) - result_L_w(i)/2*y_pos_Wing)*sin(result_alpha(i)) - D_w(i)*y_pos_hyd*cos(result_alpha(i));
-
 		end
 	end
 end

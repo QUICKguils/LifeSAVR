@@ -1,5 +1,5 @@
 % TODO:
-% - It's weird that P negative.
+% - Register h in FE, so that h always match the one chosen for the CP.
 % - Check aoi of the HT tail, it's probably different that for the wing.
 % - D.Propu.T_sls should not be used for every CP.
 % - Rework distances naming convention.
@@ -7,7 +7,7 @@
 % - Implement vpasolve more idiomatically. Maybe rotation matrix for distances.
 % - Wait for more precise CAD values.
 
-function aero_loads(h)
+function aero_loads
 % LOADS_AERO  Aerodynamic loads.
 %
 % This function computes the aerodynamic loads exerting on the wings,
@@ -17,9 +17,6 @@ function aero_loads(h)
 % found at:
 % Aircraft Structures>lesson 6>slides 11 to 25.
 %
-% Argument:
-%   h: double
-%	  Altitude at which the flight envelope is desired, in meter.
 % Save:
 %   AeroLoads: 5x7 table
 %	  Aerodynamic loads exerting on the wings, fuselage and tail, for
@@ -37,16 +34,10 @@ D = load(fullfile(file_dir, "../data.mat"));
 % Utilities.
 addpath(genpath(fullfile(file_dir, "../Utils")));
 
-%% Options setting
-
-% Default altitude is the cruise altitude.
-if ~nargin
-	h  = C.h_cr;
-end
-
 %% Main solve
 
 % Function global variables.
+h = D.FE.altitude;             % Atitude at which the CP are computed [m].
 [rho, ~, ~, ~] = ISA(h);       % Air properties at desired altitude.
 TAS2EAS = sqrt(rho/C.rho_sl);  % Conversion from true airspeed to equivalent airspeed.
 CP = D.FE.CP;                  % Extract the CP table, just for conciseness.
