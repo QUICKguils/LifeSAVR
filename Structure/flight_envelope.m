@@ -50,6 +50,9 @@ TAS2EAS = sqrt(rho/C.rho_sl);  % Conversion from true airspeed to equivalent air
 V_c = D.Propu.M_c * a;         % Design cruise speed [m/s].
 V_d = D.Propu.M_d * a;         % Design dive   speed [m/s].
 
+% Stall line: true airspeed at max lift, for the given load factor.
+tas_max_lift = @(n) sqrt(2*abs(n)*D.Plane.MTOW*C.g / (rho*D.Wing.surf*D.Wing.CL_max));
+
 % Build the flight envelope.
 % In our case, the GE is entirely contained in the ME, so FE = ME.
 ME = maneuver_envelope();
@@ -77,14 +80,6 @@ FE.altitude = h;
 % Save FE in data.mat.
 save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 
-%% Stall line points
-
-	function TAS = tas_max_lift(n)
-		% N_MAX_LIFT  True airspeed at max lift, for the given load factor.
-
-		TAS = sqrt(2 * abs(n) * D.Plane.MTOW * C.g / (rho * D.Wing.surf * D.Wing.CL_max));
-	end
-
 %% Maveuver envelope
 
 	function ME = maneuver_envelope()
@@ -99,7 +94,7 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 		n_1    = 0;
 		n_2    = C.n_up;
 		n_12   = n_1 + linspace(0, 1, 30).^2 * (n_2 - n_1);  % Quadratically distributed.
-		TAS_12 = arrayfun(@tas_max_lift, n_12);
+		TAS_12 = arrayfun(tas_max_lift, n_12);
 
 		% Dive speed, maximum upward load factor.
 		n_3   = C.n_up;
@@ -116,7 +111,7 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 		% Negative stall line.
 		n_6    = C.n_down;
 		n_61   = n_1 + linspace(1, 0, 30).^2 * (n_6 - n_1);  % Quadratically distributed.
-		TAS_61 = arrayfun(@tas_max_lift, n_61);
+		TAS_61 = arrayfun(tas_max_lift, n_61);
 
 		% Maneuver envelope structure.
 		% - contour: sample of envelope contour points. Especially useful for plotting.
@@ -191,7 +186,7 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 
 		% Positive stall line.
 		n_12    = n_1 + linspace(0, 1, 30).^2 * (n_2 - n_1);  % Quadratically distributed.
-		TAS_12 = arrayfun(@tas_max_lift, n_12);
+		TAS_12 = arrayfun(tas_max_lift, n_12);
 
 		% Point 3: positive V_c gust line at V_c.
 		TAS_3 = V_c;
