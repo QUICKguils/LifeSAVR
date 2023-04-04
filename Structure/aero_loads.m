@@ -46,7 +46,7 @@ CP = D.FE.CP;                  % Extract the CP table, just for conciseness.
 theta_dd = 1.0472;       % Additional pitch acceleration [rad/s²].
 psi_max  = deg2rad(15);  % Maximum yaw angle allowed [rad].
 
-% The return value consists of a table
+% The data structure to save consists of a table
 % that contains the computed aerodynamic loads for all the CP.
 AeroLoads = table(...
 	'Size', [height(CP), 7], ...
