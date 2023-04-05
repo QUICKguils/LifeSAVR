@@ -1,9 +1,9 @@
 % TODO:
-% - Some values are hardcoded, organize data.mat.
 % - Assumptions on fuselage and wings specs are made a little bit
 %   everywhere. Check that when more precise values are available.
 % - Pass x_cs and y_cs as arguments, and define default values.
-% - Maybe save data as a cell of tables ?
+% - Wait for more precise CAD values.
+% - Implement y option for wings_loads, if we have time.
 
 function struct_loads(x_cs, y_cs)
 % STRUCT_LOADS  Structural loads.
@@ -40,10 +40,12 @@ addpath(genpath(fullfile(file_dir, "../Utils")));
 
 %% Options setting
 
-% Option defaults; cross sections are chosen at root, at tip and midway.
+% Option defaults (from the aircraft structures project statement):
+% - cross section of the fuselage directly aft of the wing,
+% - cross section of the wing at the root.
 if ~nargin
-	x_cs = [5, 6, 7];
-	y_cs = [1, 2, 3];
+	x_cs = D.Fus.x_start;
+	y_cs = D.Fus.a / 2;
 end
 
 %% Main solve
@@ -53,7 +55,7 @@ assert( ...
 	all(x_cs >= D.Fus.x_start & x_cs <= D.Fus.x_end), ...
 	"Desired fuselage cross section should lie in the rear fuselage.");
 assert( ...
-	all(y_cs >= 0 & y_cs <= D.Wing.span/2), ...  % TODO: not correct.
+	all(y_cs >= D.Fus.a / 2 & y_cs <= D.Wing.span/2), ...  % TODO: not correct.
 	"Desired wing cross section should lie in the wing.");
 
 % Fuselage pre-computations.
@@ -91,7 +93,7 @@ nrow = 1;
 for y = y_cs
 	for idx = 1:height(AL)
 		al = AL(idx, :);
-		WingLoads(nrow, :) = fuselage_loads(al, y);
+		WingLoads(nrow, :) = wings_loads(al);
 		nrow = nrow + 1;
 	end
 end
@@ -141,7 +143,7 @@ end
 		% Y-moments equilibrium.
 		M = al.n * cosd(aoi) * (sum(weights.*larms) + Q1*L1 + Q2*L2);
 
-		% Compute the MNT.
+		% Compute the relevant MNT loads.
 		Ty = -al.F_fin;
 		Tz = (F + al.P) * cosd(aoi);
 		My = M + al.P * L_HT2cs * cosd(aoi);
@@ -150,7 +152,6 @@ end
 
 		% Return the computed loads.
 		loads = table(x, al.n, al.EAS, Ty, Tz, Mx, My, Mz);
-
 	end
 
 	function perim = fuselage_perimeter(x)
@@ -192,35 +193,41 @@ end
 %
 % WARN: Use lift, drag, etc. for ONE wing only.
 
-% 	function loads = wings_loads(n, y)
-% 		% WINGS_LOADS  Loads on a wing cross section.
-% 
-% 		W_Wing = 1/2 * mass_wing * C.g;
-% 		x_pos_Wing = pos(1);
-% 		z_pos_Wing = z_pos(1);
-% 		y_pos_Wing = y_bar_w;
-% 
-% 		W_fuel = 1/2 * W_fuel_w * C.g;
-% 		x_pos_fuel = pos(1);
-% 		z_pos_fuel = z_pos(1);
-% 		y_pos_fuel = y_bar_w;
-% 
-% 		W_hyd = 1/2*W_hyd_w*C.g;
-% 		x_pos_hyd = pos(1);
-% 		z_pos_hyd = z_pos(1);
-% 		y_pos_hyd = y_bar_w;
-% 
-% 		for i = 1:length(V_points)
-% 			SW_x(i) = (n_points(i)*(W_Wing + W_fuel + W_hyd) - result_L_w(i)/2)*sin(result_alpha(i)) + D_w(i)*cos(result_alpha(i));
-% 			SW_y(i) = 0;
-% 			SW_z(i) = (-n_points(i)*(W_Wing + W_fuel + W_hyd) + result_L_w(i)/2)*cos(result_alpha(i)) + D_w(i)*sin(result_alpha(i));
-% 
-% 			BM_x(i) = (-n_points(i)*(W_Wing*y_pos_Wing + W_fuel*y_pos_fuel + W_hyd*y_pos_hyd) - result_L_w(i)/2*y_pos_Wing)*cos(result_alpha(i)) + D_w(i)*y_pos_hyd*sin(result_alpha(i));
-% 			BM_y(i) = (-n_points(i)*(W_Wing*x_pos_Wing + W_fuel*x_pos_fuel + W_hyd*x_pos_hyd) - result_L_w(i)/2*x_pos_Wing + D_w(i)/2*x_pos_Wing)*cos(result_alpha(i)) + (-n_points(i)*(W_Wing*z_pos_Wing + W_fuel*z_pos_fuel + W_hyd*z_pos_hyd) - result_L_w(i)/2*z_pos_Wing - D_w(i)/2*z_pos_Wing)*sin(result_alpha(i));
-% 			BM_z(i) = (-n_points(i)*(W_Wing*y_pos_Wing + W_fuel*y_pos_fuel + W_hyd*y_pos_hyd) - result_L_w(i)/2*y_pos_Wing)*sin(result_alpha(i)) - D_w(i)*y_pos_hyd*cos(result_alpha(i));
-% 		end
-% 
-% 		% Return the computed loads.
-% 		loads = table(x, al.n, al.EAS, Ty, Tz, Mx, My, Mz);
-% 	end
+	function loads = wings_loads(al)
+		% WINGS_LOADS  Loads on a wing cross section.
+		%
+		% TODO:
+		%  - This function is a draft, that only works for root cs.
+		%  - We need more details about xyz coordinates of the components
+		%    attached to the wing.
+
+		% Angle of incidence of the plane [°].
+		aoi = al.aoa - D.Wing.aoi;
+		
+		% Weight of one wing [N].
+		W_wing = 0.5 * D.Wing.mass * C.g;
+		% Coordinates of the wing COG [m].
+		x_wing = D.Comp{"Wings", "COG"}(1);
+		z_wing = D.Comp{"Wings", "COG"}(2);
+		y_wing = D.Comp{"Wings", "COG"}(3);
+
+		% Weight of the fuel stored in one wing [N].
+		W_fuel = 0.5 * D.Comp{"Fuel fuselage", "Mass"} * C.g;
+		% Coordinates of the wing fuel COG [m].
+		x_fuel = D.Comp{"Fuel fuselage", "COG"}(1);
+		z_fuel = D.Comp{"Fuel fuselage", "COG"}(2);
+		y_fuel = D.Comp{"Fuel fuselage", "COG"}(3);
+
+		% Compute the relevant MNT loads.
+		% FIX: take into account the wing pitching moment.
+		Tx = ( al.n*(W_wing + W_fuel) - al.L/2) * sind(aoi) + al.D_wing * cosd(aoi);
+		Tz = (-al.n*(W_wing + W_fuel) + al.L/2) * cosd(aoi) + al.D_wing * sind(aoi);
+		Mx = (-al.n*(W_wing*y_wing + W_fuel*y_fuel) - al.L/2*y_wing) * cosd(aoi);
+		Mz = (-al.n*(W_wing*y_wing + W_fuel*y_fuel) - al.L/2*y_wing) * sind(aoi);
+		My = (-al.n*(W_wing*x_wing + W_fuel*x_fuel) - al.L/2*x_wing + al.D_wing/2*x_wing) * cosd(aoi) ...
+			+(-al.n*(W_wing*z_wing + W_fuel*z_fuel) - al.L/2*z_wing - al.D_wing/2*z_wing) * sind(aoi);
+
+		% Return the computed loads.
+		loads = table(x, al.n, al.EAS, Tx, Tz, Mx, My, Mz);
+	end
 end
