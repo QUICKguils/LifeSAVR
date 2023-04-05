@@ -17,7 +17,7 @@ function aero_loads
 % Aircraft Structures>lesson 6>slides 11 to 25.
 %
 % Save:
-%   AeroLoads: 5x7 table
+%   AeroLoads: 5x8 table
 %	  Aerodynamic loads exerting on the wings, fuselage and tail, for
 %	  all the critical points of the flight envelope.
 
@@ -48,9 +48,9 @@ psi_max  = deg2rad(15);  % Maximum yaw angle allowed [rad].
 % The data structure to save consists of a table
 % that contains the computed aerodynamic loads for all the CP.
 AeroLoads = table(...
-	'Size', [height(CP), 7], ...
-	'VariableNames', {'n',      'EAS',    'aoa',    'L',      'P',      'F_fin',  'M_fus'}, ...
-	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double', 'double'});
+	'Size', [height(CP), 8], ...
+	'VariableNames', {'n',      'EAS',    'aoa',    'L',      'D_wing', 'P',      'F_fin',  'M_fus'}, ...
+	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'});
 
 % Distances bewteen airplane COG and relevant components [m].
 dist.wing2COG = D.Comp{"Wings",           "COG"} - D.Plane.COG;  % TODO: verify that MAC is at wing COG.
@@ -157,6 +157,6 @@ save(fullfile(file_dir, "../data.mat"), "AeroLoads", "-append");
 		M_fus = F_fin * D.VT.y;  % TODO: verify that using D.VT.y is correct.
 
 		% Return the computed loads.
-		loads = table(n, EAS, aoa_res, L_res, P_res, F_fin, M_fus);
+		loads = table(n, EAS, aoa_res, L_res, D_wing, P_res, F_fin, M_fus);
 	end
 end
