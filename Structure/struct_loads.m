@@ -5,7 +5,7 @@
 % - Pass x_cs and y_cs as arguments, and define default values.
 % - Maybe save data as a cell of tables ?
 
-function struct_loads
+function struct_loads(x_cs, y_cs)
 % STRUCT_LOADS  Structural loads.
 %
 % This function computes the structural loads exerting on the wings and
@@ -16,6 +16,11 @@ function struct_loads
 % found at:
 % Aircraft Structures>lesson 6>slides 26 to 39.
 %
+% Arguments:
+%   x_cs: 1xn double, optional
+%     X-coordinates of the desired fuselage cross sections [m].
+%   y_cs: 1xn double, optional
+%     Y-coordinates of the desired wing cross sections [m].
 % Save:
 %   FusLoads: table
 %   WingLoads: table
@@ -26,21 +31,33 @@ function struct_loads
 file_dir = fileparts(mfilename("fullpath"));
 
 % Constants and aircraft data.
-C = load(fullfile(file_dir, "../constants.mat"));
-D = load(fullfile(file_dir, "../data.mat"));
+C  = load(fullfile(file_dir, "../constants.mat"));
+D  = load(fullfile(file_dir, "../data.mat"));
+AL = D.AeroLoads;
 
 % Utilities.
 addpath(genpath(fullfile(file_dir, "../Utils")));
 
+%% Options setting
+
+% Option defaults; cross sections are chosen at root, at tip and midway.
+if ~nargin
+	x_cs = [5, 6, 7];
+	y_cs = [1, 2, 3];
+end
+
 %% Main solve
 
-% Function global variables.
-x_cs = [5, 6, 7];    % X-coord. of desired fuselage cross sections [m].
-y_cs = [5, 6, 7];    % Y-coord. of desired wing     cross sections [m].
-AL   = D.AeroLoads;  % Extract the AeroLoads table, just for conciseness.
+% Sanity checks on cross sections coordinates.
+assert( ...
+	all(x_cs >= D.Fus.x_start & x_cs <= D.Fus.x_end), ...
+	"Desired fuselage cross section should lie in the rear fuselage.");
+assert( ...
+	all(y_cs >= 0 & y_cs <= D.Wing.span/2), ...  % TODO: not correct.
+	"Desired wing cross section should lie in the wing.");
 
-% TODO: add sanity checks on x_cs and y_cs values.
-
+% Fuselage pre-computations.
+%
 % Surface of the rear fuselage [m²].
 S_rf = integral(@fuselage_perimeter, D.Fus.x_start, D.Fus.x_end, 'ArrayValued', true);
 % Rear fuselage weight [N].
@@ -79,8 +96,14 @@ for y = y_cs
 	end
 end
 
-% Save FusLoads and WingLoads in data.mat.
-save(fullfile(file_dir, "../data.mat"), "FusLoads", "WingLoads", "-append");
+% Save Save FusLoads and WingLoads in data.mat for the default cross
+% sections values, otherwise simply display the results.
+if ~nargin
+	save(fullfile(file_dir, "../data.mat"), "FusLoads", "WingLoads", "-append");
+else
+	disp(FusLoads);
+	disp(WingLoads);
+end
 
 %% Fuselage loads
 
