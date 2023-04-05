@@ -153,7 +153,7 @@ V_c = sqrt(F_c / (0.5 * C.rho_cr * D.Wing.surf * Cd));
 
 % Design cruise and dive mach numbers.
 M_c = V_c / C.a_cr;
-M_d = 1.07 * M_c;
+M_d = 1.25 * M_c;
 
 %% Fuel weight estimation
 % Teams>General>Books>Raymer (page 149)
