@@ -17,8 +17,8 @@ function struct_loads
 % Aircraft Structures>lesson 6>slides 26 to 39.
 %
 % Save:
-%   FuselageLoads: table
-%   WingsLoads: table
+%   FusLoads: table
+%   WingLoads: table
 
 %% Imports
 
@@ -41,45 +41,46 @@ AL   = D.AeroLoads;  % Extract the AeroLoads table, just for conciseness.
 
 % TODO: add sanity checks on x_cs and y_cs values.
 
-% Fuselage specs.
-%
-% Geometry.
-L_fus = 4;  % Rear fuselage length [m].
-a = 1.3;    % Ellipse major axis [m].
-b = 1.1;    % Ellipse minor axis [m].
-x_start = D.Comp{"Wings", "COG"}(1);  % X-coord of rear fuselage start [m].
-x_end   = x_start + L_fus;            % X-coord of rear fuselage end [m].
-x_sectrans = x_end - 2;               % X_coord where ellipse become circle [m].
-surface = integral(@fuselage_perimeter, x_start, x_end, 'ArrayValued', true);  % Surface of the rear fuselage [m²].
-% Mechanical properties.
-W_fus = 0.5 * D.Plane.MTOW * C.g * 0.064;  % Rear fuselage weight [N]. (See slide 28.)
-w_end = fuselage_linweight(x_end);         % Aft fuselage linear weight [N/m].
-
-% Wings specs.
+% Surface of the rear fuselage [m²].
+S_rf = integral(@fuselage_perimeter, D.Fus.x_start, D.Fus.x_end, 'ArrayValued', true);
+% Rear fuselage weight [N].
+W_rf = D.Fus.mass * C.g;
+% Aft fuselage linear weight [N/m].
+w_end = fuselage_linweight(D.Fus.x_end);
 
 % The return value consists of two tables that contains the MNT in the
 % selected fuselage and wing cross sections, for al the CP.
-FuselageLoads = table( ...
+FusLoads = table( ...
 	'Size', [height(AL) * numel(x_cs), 8], ...
 	'VariableNames', {'x',      'n',      'EAS',    'Ty',     'Tz',     'My',     'Mz',     'Mx'}, ...
 	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'});
-WingsLoads = table( ...
+WingLoads = table( ...
 	'Size', [height(AL) * numel(y_cs), 8], ...
 	'VariableNames', {'y',      'n',      'EAS',    'Ty',     'Tz',     'My',     'Mz',     'Mx'}, ...
 	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'});
 
-% Determine MNT in the selected fuselage and wing cross sections.
-% TODO: invert the loop nesting.
+% MNT in the selected fuselage cross sections.
 nrow = 1;
 for x = x_cs
 	for idx = 1:height(AL)
 		al = AL(idx, :);
-		FuselageLoads(nrow, :) = fuselage_loads(al, x);
+		FusLoads(nrow, :) = fuselage_loads(al, x);
 		nrow = nrow + 1;
 	end
 end
 
-disp(FuselageLoads);
+% MNT in the selected wings cross sections.
+nrow = 1;
+for y = y_cs
+	for idx = 1:height(AL)
+		al = AL(idx, :);
+		WingLoads(nrow, :) = fuselage_loads(al, y);
+		nrow = nrow + 1;
+	end
+end
+
+% Save FusLoads and WingLoads in data.mat.
+save(fullfile(file_dir, "../data.mat"), "FusLoads", "WingLoads", "-append");
 
 %% Fuselage loads
 
@@ -91,8 +92,8 @@ disp(FuselageLoads);
 		% Fuselage linear weight at cross section [N/m].
 		w_x = fuselage_linweight(x);
 		% Length from cross section to aft [m].
-		L_rear = x_end - x;
-		% Distance from HT to cross section.
+		L_rear = D.Fus.x_end - x;
+		% Distance from HT to cross section [m].
 		L_HT2cs = D.Comp{"Horizontal tail", "COG"}(1) - x;
 
 		% Select the components that lies after the cross-section.
@@ -117,13 +118,14 @@ disp(FuselageLoads);
 		% Y-moments equilibrium.
 		M = al.n * cosd(aoi) * (sum(weights.*larms) + Q1*L1 + Q2*L2);
 
-		% TODO: double check signs.
+		% Compute the MNT.
 		Ty = -al.F_fin;
 		Tz = (F + al.P) * cosd(aoi);
 		My = M + al.P * L_HT2cs * cosd(aoi);
 		Mz = al.F_fin * L_HT2cs;
 		Mx = -al.M_fus;  % See aero_loads.m: we don't take M_tail into account.
 
+		% Return the computed loads.
 		loads = table(x, al.n, al.EAS, Ty, Tz, My, Mz, Mx);
 
 	end
@@ -138,14 +140,12 @@ disp(FuselageLoads);
 		%
 		% TODO: wait for precise fuselage geometrical specs.
 
-		if x <= x_sectrans
+		if x <= D.Fus.x_sectrans
 			% Perimeter of an ellipe [m].
-			perim = 2*pi * sqrt((a/2)^2 + (b/2)^2 / 2);
+			perim = 2*pi * sqrt((D.Fus.a/2)^2 + (D.Fus.b/2)^2 / 2);
 		else
-			% Circle diameter [m].  TODO: add taper from ellipse to aft.
-			d = 0.9;
 			% Perimeter of a circle [m].
-			perim = pi * d;
+			perim = pi * D.Fus.d;
 		end
 	end
 
@@ -162,7 +162,7 @@ disp(FuselageLoads);
 		% Perimeter of the rear fuselage at x [m].
 		perim = fuselage_perimeter(x);
 
-		w = W_fus * perim / surface;
+		w = W_rf * perim / S_rf;
 	end
 
 %% Wings loads

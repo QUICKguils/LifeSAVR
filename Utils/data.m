@@ -97,7 +97,7 @@ HT.aoi              = -0.15;      % Angle of incidence [°].
 HT.x_AC             = 0.19;       % X-position of the aerodynamic center [m].
 HT.y                = 0.29;       % Distance from root to MAC [m].
 HT.elevator.c       = 0.22;       % Elevator chord [m].
-HT.elevator.L       = 1.2;        % Elevator span [m]
+HT.elevator.length  = 1.2;        % Elevator span [m]
 HT.elevator.sweep   = 23.8;       % Elevator sweep angle [°].
 HT.height           = -0.2;       % Distance between wing and tail [m].
 HT.CL_max           = -0.21;      % Max lift coefficient.
@@ -132,6 +132,7 @@ VT.airfoil.name  = "SC 0010";  % Airfoil name.
 
 %% Components
 
+% TODO: mass of the fuselage not taken into account.
 Comp = table();
 %                                                             COG [m]
 %                 Name                    Mass [lb]      X       Y       Z
@@ -189,9 +190,24 @@ Plane.MTOW  = sum(Comp.Mass);                           % MTOW [kg].
 Plane.COG   = sum(Comp.Mass .* Comp.COG) / Plane.MTOW;  % COG [m].
 Plane.CD_0  = 0.017;                                    % Zero lift drag coefficient.
 
+%% Fuselage
+%
+% TODO: lots of assumptions and hardcoded values here.
+
+Fus.length      = 8;                              % Fuselage length [m].
+Fus.length_rear = 4;                              % Rear fuselage length [m].
+Fus.x_start     = Comp{"Wings", "COG"}(1);        % X-coord of rear fuselage start [m].
+Fus.x_end       = Fus.x_start + Fus.length_rear;  % X-coord of rear fuselage end [m].
+Fus.a           = 1.3;                            % Ellipse major axis [m].
+Fus.b           = 1.1;                            % Ellipse minor axis [m].
+Fus.d           = 0.9;                            % Circle diameter [m].
+Fus.x_sectrans  = Fus.x_end - 2;                  % X_coord where ellipse cross section become circle [m].
+Fus.mass        = 0.5 * Plane.MTOW * 0.064;       % Rear fuselage mass [kg]. (See Structures>lesson 6>slide 28)
+
+
 %% Write in data.mat
 
 % Save data in data.mat, which lies in the root directory.
-save(fullfile(file_dir, "../data.mat"), "Wing", "HT", "VT", "Comp", "Plane");
+save(fullfile(file_dir, "../data.mat"), "Wing", "HT", "VT", "Comp", "Plane", "Fus");
 
 end

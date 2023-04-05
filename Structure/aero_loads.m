@@ -1,5 +1,4 @@
 % TODO:
-% - Register h in FE, so that h always match the one chosen for the CP.
 % - Check aoi of the HT tail, it's probably different that for the wing.
 % - D.Propu.T_sls should not be used for every CP.
 % - Rework distances naming convention.
@@ -67,7 +66,7 @@ for idx = 1:height(CP)
 	AeroLoads(idx, :) = loads;
 end
 
-% Save Loads in data.mat.
+% Save AeroLoads in data.mat.
 save(fullfile(file_dir, "../data.mat"), "AeroLoads", "-append");
 
 %% Solve aircraft dynamic equilibrium for the given CP
