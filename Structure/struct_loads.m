@@ -65,15 +65,15 @@ W_rf = D.Fus.mass * C.g;
 % Aft fuselage linear weight [N/m].
 w_end = fuselage_linweight(D.Fus.x_end);
 
-% The return value consists of two tables that contains the MNT in the
-% selected fuselage and wing cross sections, for al the CP.
+% The return value consists of two tables that contains the relevant MNT
+% loads in the selected fuselage and wing cross sections, for al the CP.
 FusLoads = table( ...
 	'Size', [height(AL) * numel(x_cs), 8], ...
-	'VariableNames', {'x',      'n',      'EAS',    'Ty',     'Tz',     'My',     'Mz',     'Mx'}, ...
+	'VariableNames', {'x',      'n',      'EAS',    'Ty',     'Tz',     'Mx',     'My',     'Mz'}, ...
 	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'});
 WingLoads = table( ...
 	'Size', [height(AL) * numel(y_cs), 8], ...
-	'VariableNames', {'y',      'n',      'EAS',    'Ty',     'Tz',     'My',     'Mz',     'Mx'}, ...
+	'VariableNames', {'y',      'n',      'EAS',    'Tx',     'Tz',     'Mx',     'My',     'Mz'}, ...
 	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'});
 
 % MNT in the selected fuselage cross sections.
@@ -149,7 +149,7 @@ end
 		Mx = -al.M_fus;  % See aero_loads.m: we don't take M_tail into account.
 
 		% Return the computed loads.
-		loads = table(x, al.n, al.EAS, Ty, Tz, My, Mz, Mx);
+		loads = table(x, al.n, al.EAS, Ty, Tz, Mx, My, Mz);
 
 	end
 
@@ -189,8 +189,10 @@ end
 	end
 
 %% Wings loads
+%
+% WARN: Use lift, drag, etc. for ONE wing only.
 
-% 	function wings_loads(n, y)
+% 	function loads = wings_loads(n, y)
 % 		% WINGS_LOADS  Loads on a wing cross section.
 % 
 % 		W_Wing = 1/2 * mass_wing * C.g;
@@ -217,5 +219,8 @@ end
 % 			BM_y(i) = (-n_points(i)*(W_Wing*x_pos_Wing + W_fuel*x_pos_fuel + W_hyd*x_pos_hyd) - result_L_w(i)/2*x_pos_Wing + D_w(i)/2*x_pos_Wing)*cos(result_alpha(i)) + (-n_points(i)*(W_Wing*z_pos_Wing + W_fuel*z_pos_fuel + W_hyd*z_pos_hyd) - result_L_w(i)/2*z_pos_Wing - D_w(i)/2*z_pos_Wing)*sin(result_alpha(i));
 % 			BM_z(i) = (-n_points(i)*(W_Wing*y_pos_Wing + W_fuel*y_pos_fuel + W_hyd*y_pos_hyd) - result_L_w(i)/2*y_pos_Wing)*sin(result_alpha(i)) - D_w(i)*y_pos_hyd*cos(result_alpha(i));
 % 		end
+% 
+% 		% Return the computed loads.
+% 		loads = table(x, al.n, al.EAS, Ty, Tz, Mx, My, Mz);
 % 	end
 end
