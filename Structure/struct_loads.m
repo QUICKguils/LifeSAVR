@@ -13,8 +13,7 @@ function struct_loads(x_cs, y_cs)
 % envelope.
 %
 % This function implements the methodology and formulae that can be
-% found at:
-% Aircraft Structures>lesson 6>slides 26 to 39.
+% found at: Aircraft Structures>lesson 6>slides 26 to 39.
 %
 % Arguments:
 %   x_cs: 1xn double, optional
@@ -45,7 +44,7 @@ addpath(genpath(fullfile(file_dir, "../Utils")));
 % - cross section of the wing at the root.
 if ~nargin
 	x_cs = D.Fus.x_start;
-	y_cs = D.Fus.a / 2;
+	y_cs = D.Fus.a;
 end
 
 %% Main solve
@@ -55,8 +54,20 @@ assert( ...
 	all(x_cs >= D.Fus.x_start & x_cs <= D.Fus.x_end), ...
 	"Desired fuselage cross section should lie in the rear fuselage.");
 assert( ...
-	all(y_cs >= D.Fus.a / 2 & y_cs <= D.Wing.span/2), ...  % TODO: not correct.
+	all(y_cs >= D.Fus.a & y_cs <= D.Wing.span/2), ...  % TODO: not correct.
 	"Desired wing cross section should lie in the wing.");
+
+% The data structures to save consists of two table that contains the
+% relevant MNT loads in the selected fuselage and wing cross sections,
+% for al the CP.
+FusLoads = table( ...
+	'Size', [height(AL) * numel(x_cs), 8], ...
+	'VariableNames', {'x',      'n',      'EAS',    'Ty',     'Tz',     'Mx',     'My',     'Mz'}, ...
+	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'});
+WingLoads = table( ...
+	'Size', [height(AL) * numel(y_cs), 8], ...
+	'VariableNames', {'y',      'n',      'EAS',    'Tx',     'Tz',     'Mx',     'My',     'Mz'}, ...
+	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'});
 
 % Fuselage pre-computations.
 %
@@ -66,17 +77,6 @@ S_rf = integral(@fuselage_perimeter, D.Fus.x_start, D.Fus.x_end, 'ArrayValued', 
 W_rf = D.Fus.mass * C.g;
 % Aft fuselage linear weight [N/m].
 w_end = fuselage_linweight(D.Fus.x_end);
-
-% The return value consists of two tables that contains the relevant MNT
-% loads in the selected fuselage and wing cross sections, for al the CP.
-FusLoads = table( ...
-	'Size', [height(AL) * numel(x_cs), 8], ...
-	'VariableNames', {'x',      'n',      'EAS',    'Ty',     'Tz',     'Mx',     'My',     'Mz'}, ...
-	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'});
-WingLoads = table( ...
-	'Size', [height(AL) * numel(y_cs), 8], ...
-	'VariableNames', {'y',      'n',      'EAS',    'Tx',     'Tz',     'Mx',     'My',     'Mz'}, ...
-	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'});
 
 % MNT in the selected fuselage cross sections.
 nrow = 1;
@@ -98,8 +98,8 @@ for y = y_cs
 	end
 end
 
-% Save Save FusLoads and WingLoads in data.mat for the default cross
-% sections values, otherwise simply display the results.
+% Save FusLoads and WingLoads in data.mat for the default cross sections
+% values, otherwise simply display the results.
 if ~nargin
 	save(fullfile(file_dir, "../data.mat"), "FusLoads", "WingLoads", "-append");
 else
@@ -166,7 +166,7 @@ end
 
 		if x <= D.Fus.x_sectrans
 			% Perimeter of an ellipe [m].
-			perim = 2*pi * sqrt((D.Fus.a/2)^2 + (D.Fus.b/2)^2 / 2);
+			perim = 2*pi * sqrt(D.Fus.a^2 + D.Fus.b^2 / 2);
 		else
 			% Perimeter of a circle [m].
 			perim = pi * D.Fus.d;
