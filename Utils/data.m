@@ -63,16 +63,17 @@ Wing.airfoil.M_dd         = 0.786;    % Drag divergence mach number [-].
 Wing.airfoil.cm           = -0.0778;  % Pitching moment coefficient (incompressible) [-].
 
 % Flaps planform: plain flaps.
-% Begins at the end of fuselage width + 2% of span
-% Ends at 60% of span
-% 25% of the airfoil chord
-Wing.flaps.defl_takeoff = 20; % Flap deflection at takeoff [°].
-Wing.flaps.defl_landing = 40; % Flap deflection at landing [°].
+Wing.flaps.span_start   = 0.02;  % Ratio bw flaps starting Y coord. and span.
+                                 % Note that Y coord. begins at the end of fuselage.
+Wing.flaps.span_end     = 0.6;   % Ratio bw flaps ending   Y coord. and span.
+Wing.flaps.chord_ratio  = 0.25;  % Ratio bw flaps X-length and chord.
+Wing.flaps.defl_takeoff = 20;    % Flap deflection at takeoff [°].
+Wing.flaps.defl_landing = 40;    % Flap deflection at landing [°].
 
 % Ailerons planform.
-% Begins at 60% of span
-% Ends at 90% of span
-% 25% of the airfoil chord
+Wing.ailerons.span_start  = 0.6;   % Ratio bw ailerons starting Y coord. and span.
+Wing.ailerons.span_end    = 0.9;   % Ratio bw ailerons ending   Y coord. and span.
+Wing.ailerons.chord_ratio = 0.25;  % Ratio bw ailerons X-length and chord.
 
 %% Horizontal tail
 

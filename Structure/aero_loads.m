@@ -60,9 +60,8 @@ dist.E2COG    = D.Comp{"Engine",          "COG"} - D.Plane.COG;
 % Solve aircraft dynamic equilibrium for each CP.
 % Write the results in AeroLoads.
 for idx = 1:height(CP)
-	n   = CP{idx, 'n'};
-	EAS = CP{idx, 'EAS'};
-	loads = solve_loads(n, EAS);
+	cp    = CP(idx, :);
+	loads = solve_loads(cp);
 	AeroLoads(idx, :) = loads;
 end
 
@@ -71,17 +70,18 @@ save(fullfile(file_dir, "../data.mat"), "AeroLoads", "-append");
 
 %% Solve aircraft dynamic equilibrium for the given CP
 
-	function loads = solve_loads(n, EAS)
+	function loads = solve_loads(cp)
 		% SOLVE_LOADS  Solve aircraft dynamic equilibrium for the given CP.
 		%
 		% Arguments:
-		%   n   (double) -- CP load factor.
-		%   EAS (double) -- CP equivalent airspeed, in [m/s].
+		%   cp (1x2 table) -- Coordinates (n, EAS) of the given CP.
+		%     n   (double) -- CP load factor.
+		%     EAS (double) -- CP equivalent airspeed, in [m/s].
 		% Return:
 		%   loads (1x6 table) -- Solution of the dynamic equilibrium.
 
 		% Retrieve the true airspeed.
-		TAS = EAS / TAS2EAS;
+		TAS = cp.EAS / TAS2EAS;
 
 		% Thrust [N].
 		T = D.Propu.T_sls * thrust_SLSconv(TAS, h, D.Propu.engine.BPR, D.Propu.engine.G);
@@ -128,7 +128,7 @@ save(fullfile(file_dir, "../data.mat"), "AeroLoads", "-append");
 		% Define system of equations.
 		eqns = [ ...
 			L == 0.5 * rho * TAS^2 * D.Wing.surf * D.Wing.CL_alpha * deg2rad(aoa + D.Wing.aoa_zerolift), ...
-			L + P == n*W - T*sind(aoi), ...
+			L + P == cp.n*W - T*sind(aoi), ...
 			I_theta * theta_dd == - L*dx_w + D_wing*dz_w + D_body*dz_b - P*dx_HT - T*dist.E2COG(3) + M, ...
 			dx_w  ==   cosd(aoi) * dist.wing2COG(1) + sind(aoi) * dist.wing2COG(3), ...
 			dz_w  == - sind(aoi) * dist.wing2COG(1) + cosd(aoi) * dist.wing2COG(3), ...
@@ -139,8 +139,8 @@ save(fullfile(file_dir, "../data.mat"), "AeroLoads", "-append");
 		% Solve the system.
 		res = vpasolve(...
 			eqns, ...
-			[aoa, L,   P, dx_w,             dz_w,             dx_HT,          dz_b, aoi], ...
-			[5,   n*W, 0, dist.wing2COG(1), dist.wing2COG(3), dist.HT2COG(1), 0,    5]);
+			[aoa, L,      P, dx_w,             dz_w,             dx_HT,          dz_b, aoi], ...
+			[5,   cp.n*W, 0, dist.wing2COG(1), dist.wing2COG(3), dist.HT2COG(1), 0,    5]);
 		% Unpack the results of interest.
 		aoa_res = double(res.aoa);
 		L_res   = double(res.L);
@@ -150,13 +150,13 @@ save(fullfile(file_dir, "../data.mat"), "AeroLoads", "-append");
 		VT_a = 5.5 * D.VT.AR / (D.VT.AR + 2);
 
 		% Lift of the vertical tail [N].
-		F_fin = 0.5 * rho * EAS^2 * D.VT.surf * VT_a * psi_max;
+		F_fin = 0.5 * rho * cp.EAS^2 * D.VT.surf * VT_a * psi_max;
 
 		% Fuselage bending moment [N*m].
 		% No need to take into account the M_tail.  % TODO: not sure of that: M_tail does not seems negligible.
 		M_fus = F_fin * D.VT.y;  % TODO: verify that using D.VT.y is correct.
 
 		% Return the computed loads.
-		loads = table(n, EAS, aoa_res, L_res, D_wing, P_res, F_fin, M_fus);
+		loads = table(cp.n, cp.EAS, aoa_res, L_res, D_wing, P_res, F_fin, M_fus);
 	end
 end
