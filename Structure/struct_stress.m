@@ -1,12 +1,12 @@
 % TODO:
 % - Some values are guessed. Wait for more precise values.
 % - Lots of hardcoded values.
+% - perf: cell_area is way too slow.
 % - Lots of computation are redudant and should not be done for each
 %   Loads table lines. For examle, the stringers coordinates.
 % - We neglected the air induction system.
 % - the pc structure is not very clean. Fins a way to properly extract x
 %   and z from s, without explicitely define their expressions.
-
 function struct_stress
 % STRUCT_STRESS  Structural stresses and resulting design choices.
 %
@@ -22,6 +22,8 @@ function struct_stress
 %   WingStresses (table)  -- Stresses in the wings    cross sections.
 %   FusDesign    (struct) -- Resulting design choices for the fuselage.
 %   WingDesign   (struct) -- Resulting design choices for the wing.
+
+close all;
 
 %% Imports
 
@@ -76,9 +78,11 @@ save(fullfile(file_dir, "../data.mat"), "FusStresses", 'FusDesign', "-append");
 
 % 3. Wing computations.
 
-% % Wing data.
-% ns_wing = 39;  % Number of stringers.  TODO: see later if it yield decent booms area.
-%
+% Wing data.
+ns_P2 = 10;  % Number of stringers in panel 2.
+ns_P3 = 10;  % Number of stringers in panel 3.
+ns_P4 = 10;  % Number of stringers in panel 4.
+
 % % This table contains the relevant stresses and resulting dimensions in
 % % the selected wing cross sections, for al the CP.
 % WingStresses = table(...
@@ -92,7 +96,8 @@ save(fullfile(file_dir, "../data.mat"), "FusStresses", 'FusDesign', "-append");
 % end
 %
 % WingDesign = {};
-wings_stresses();
+
+wing_geometry;
 
 % 4. Save relevant data structures in data.mat.
 
@@ -185,19 +190,19 @@ save(fullfile(file_dir, "../data.mat"), "FusStresses",  'FusDesign',  "-append")
 
 	function wings_stresses(wl)
 		% WING_STRESSES  Stresses in the wings.
-		%
-		% NOTE:
-		%   See the report, or annex drawing that explain the labelling
-		%   convention.
 
-		% TODO: lots of computations must lie in main solve.
+		disp(wl);
+	end
+
+	function wing_geometry
+		% WING_GEOMETRY
 
 		% Load the file containing the X and Z coordinates of the airfoil
 		% profile, starting from the leading edge and cycling clockwise.
 		airfoil = load(fullfile(file_dir, "sc2_0412.dat"));
 		% Extract XZ coordinates of the perimeter [m].
-		x_airfoil = D.Wing.c_root * airfoil(:,1);
-		z_airfoil = D.Wing.c_root * airfoil(:,2);
+		x_af = D.Wing.c_root * airfoil(:,1);
+		z_af = D.Wing.c_root * airfoil(:,2);
 		% Parametric curve of the airfoil [m].
 		af_pc = new_pc(x_airfoil, z_airfoil);
 
@@ -234,8 +239,8 @@ save(fullfile(file_dir, "../data.mat"), "FusStresses",  'FusDesign',  "-append")
 		P3 = extract_pc(af_pc, N2.t, N3.t);
 		P4 = extract_pc(af_pc, N3.t, N4.t);
 		P5 = extract_pc(af_pc, N4.t, 1);
-		P6 = new_pc([N1.x, N4.x], [N1.z, N4.z]);
-		P7 = new_pc([N2.x, N3.x], [N2.z, N3.z]);
+		P6 = new_pc([N2.x, N3.x], [N2.z, N3.z]);
+		P7 = new_pc([N1.x, N4.x], [N1.z, N4.z]);
 
 		% Uncomment this paragraph to check the panels and nodes.
 		figure('WindowStyle','docked');
@@ -258,6 +263,10 @@ save(fullfile(file_dir, "../data.mat"), "FusStresses",  'FusDesign',  "-append")
 		dP4 = derive_pc(P4);
 		disp(dP4.s(0.8));
 		disp(pc_length(P3, 0, 1));
+		C1 = join_pc(P3, reverse_pc(P6));
+		disp(C1.s(0.9));
+		% 		fplot(@(t) C1.x(t), @(t) C1.z(t), [0, 1]);
+		% 		disp(cell_area(C1));
 	end
 
 	function pc = new_pc(Xs, Zs)
@@ -268,10 +277,22 @@ save(fullfile(file_dir, "../data.mat"), "FusStresses",  'FusDesign',  "-append")
 		%   Ys (1xn double) -- Z coord. sample of the curve.
 		% Return:
 		%   pc (function_handle) -- Parametric curve.
-
-		pc.x = @(t) interp1(linspace(0, 1, numel(Xs)), Xs, t);
-		pc.z = @(t) interp1(linspace(0, 1, numel(Zs)), Zs, t);
+		%     Argument:
+		%       t -- Parameter, ranging from 0 to 1.
+		%     Return:
+		%       s -- Position vector.
+		%       x -- X component of s.
+		%       z -- Z component of s.
+		pc.x = @(t) interp1(linspace(0, 1, numel(Xs)), Xs, t, 'pchip', 0);
+		pc.z = @(t) interp1(linspace(0, 1, numel(Zs)), Zs, t, 'pchip', 0);
 		pc.s = @(t) [pc.x(t), pc.z(t)];
+	end
+
+	function pc_reversed = reverse_pc(pc)
+		% INVERT_PC  Reverse the path direction of the parametric curve.
+		pc_reversed.s = @(t) pc.s(1-t);
+		pc_reversed.x = @(t) pc.x(1-t);
+		pc_reversed.z = @(t) pc.z(1-t);
 	end
 
 	function pc_extracted = extract_pc(base_pc, ti, tf)
@@ -283,9 +304,9 @@ save(fullfile(file_dir, "../data.mat"), "FusStresses",  'FusDesign',  "-append")
 
 	function pc_joined = join_pc(pc1, pc2)
 		% JOIN_PC  Join two parametric curves.
-		pc_joined.x = @(t) pc1.x(t/2) + pc2.x(t/2+0.5);
-		pc_joined.z = @(t) pc1.z(t/2) + pc2.z(t/2+0.5);
-		pc_joined.s = @(t) pc1.s(t/2) + pc2.s(t/2+0.5);
+		pc_joined.x = @(t) pc1.x(2*t) * (t<=0.5) + pc2.x(2*(t-0.5)) * (t>0.5);
+		pc_joined.z = @(t) pc1.z(2*t) * (t<=0.5) + pc2.z(2*(t-0.5)) * (t>0.5);
+		pc_joined.s = @(t) pc1.s(2*t) * (t<=0.5) + pc2.s(2*(t-0.5)) * (t>0.5);
 	end
 
 	function pc_derived = derive_pc(pc, dt)
@@ -304,13 +325,15 @@ save(fullfile(file_dir, "../data.mat"), "FusStresses",  'FusDesign',  "-append")
 	function length = pc_length(pc, ti, tf)
 		% PC_LENGTH  Arc length of a parametric curve.
 		pc_derived = derive_pc(pc);
-		length = integral(@(t) norm(pc_derived.s(t)), ti, tf, 'ArrayValued', true);
+		length = integral(@(t) norm(pc_derived.s(t)), ti, tf, ArrayValued=true);
 	end
 
 	function area = cell_area(cell)
 		% CELL_AREA  Area enclosed by a cell.
 		%
 		% Green's formula: A = 0.5 * int_0^1((x(t)y'(t)-x'(t)y(t))dt.
-		area = cell;
+		dCdt = derive_pc(cell);
+		area = 0.5 * integral(@(t) cell.x(t)*dCdt.z(t) - dCdt.x(t)*cell.z(t), 0, 1, ArrayValued=true);
 	end
+
 end
