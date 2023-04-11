@@ -204,7 +204,7 @@ save(fullfile(file_dir, "../data.mat"), "FusStresses",  'FusDesign',  "-append")
 		x_af = D.Wing.c_root * airfoil(:,1);
 		z_af = D.Wing.c_root * airfoil(:,2);
 		% Parametric curve of the airfoil [m].
-		af_pc = new_pc(x_airfoil, z_airfoil);
+		af_pc = new_pc(x_af, z_af);
 
 		% XZ coordinates of the centroïd of area of the skin [m].
 		% 		x_CG = sum(x_airfoil) / numel(x_airfoil);
@@ -232,8 +232,8 @@ save(fullfile(file_dir, "../data.mat"), "FusStresses",  'FusDesign',  "-append")
 		N4.x = x_spar1;
 		N4.z = af_pc.z(N4.t);
 
-		% Parametric curves of the panels.
-		% We call "panels" the
+		% Panels of the profile.
+		% We call "panels" the walls perpendicular to the airfoil cross section.
 		P1 = extract_pc(af_pc, 0,    N1.t);
 		P2 = extract_pc(af_pc, N1.t, N2.t);
 		P3 = extract_pc(af_pc, N2.t, N3.t);
@@ -241,6 +241,20 @@ save(fullfile(file_dir, "../data.mat"), "FusStresses",  'FusDesign',  "-append")
 		P5 = extract_pc(af_pc, N4.t, 1);
 		P6 = new_pc([N2.x, N3.x], [N2.z, N3.z]);
 		P7 = new_pc([N1.x, N4.x], [N1.z, N4.z]);
+
+		% Stringers of the profile.
+		S_P2.t = linspace(0, 1, ns_P2+2);
+		S_P2.t = S_P2.t(2:end-1);
+		S_P2.x = P2.x(S_P2.t);
+		S_P2.z = P2.z(S_P2.t);
+		S_P3.t = linspace(0, 1, ns_P3+2);
+		S_P3.t = S_P3.t(2:end-1);
+		S_P3.x = P3.x(S_P3.t);
+		S_P3.z = P3.z(S_P3.t);
+		S_P4.t = linspace(0, 1, ns_P4+2);
+		S_P4.t = S_P4.t(2:end-1);
+		S_P4.x = P4.x(S_P4.t);
+		S_P4.z = P4.z(S_P4.t);
 
 		% Uncomment this paragraph to check the panels and nodes.
 		figure('WindowStyle','docked');
@@ -252,21 +266,16 @@ save(fullfile(file_dir, "../data.mat"), "FusStresses",  'FusDesign',  "-append")
 		fplot(P5.x, P5.z, [0, 1]);
 		fplot(P6.x, P6.z, [0, 1]);
 		fplot(P7.x, P7.z, [0, 1]);
-		plot(N1.x, N1.z, '*'); plot(N2.x, N2.z, '*');
-		plot(N3.x, N3.z, '*'); plot(N4.x, N4.z, '*');
+		plot(N1.x, N1.z, 'o'); plot(N2.x, N2.z, 'o');
+		plot(N3.x, N3.z, 'o'); plot(N4.x, N4.z, 'o');
+		plot(S_P2.x, S_P2.z, '*');
+		plot(S_P3.x, S_P3.z, '*');
+		plot(S_P4.x, S_P4.z, '*');
 		hold off;
 		title('Panels and nodes');
 		grid;
 		axis equal;
 
-		% test.
-		dP4 = derive_pc(P4);
-		disp(dP4.s(0.8));
-		disp(pc_length(P3, 0, 1));
-		C1 = join_pc(P3, reverse_pc(P6));
-		disp(C1.s(0.9));
-		% 		fplot(@(t) C1.x(t), @(t) C1.z(t), [0, 1]);
-		% 		disp(cell_area(C1));
 	end
 
 	function pc = new_pc(Xs, Zs)
@@ -283,8 +292,8 @@ save(fullfile(file_dir, "../data.mat"), "FusStresses",  'FusDesign',  "-append")
 		%       s -- Position vector.
 		%       x -- X component of s.
 		%       z -- Z component of s.
-		pc.x = @(t) interp1(linspace(0, 1, numel(Xs)), Xs, t, 'pchip', 0);
-		pc.z = @(t) interp1(linspace(0, 1, numel(Zs)), Zs, t, 'pchip', 0);
+		pc.x = @(t) interp1(linspace(0, 1, numel(Xs)), Xs, t, 'linear', 0);
+		pc.z = @(t) interp1(linspace(0, 1, numel(Zs)), Zs, t, 'linear', 0);
 		pc.s = @(t) [pc.x(t), pc.z(t)];
 	end
 
