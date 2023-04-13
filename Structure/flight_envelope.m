@@ -63,7 +63,7 @@ Speeds = design_EAS(ME, GE);
 
 % Plot the curves.
 if contains(opts, 'p')
-	plot_envelope(ME, GE);
+	plot_write(ME, GE);
 end
 
 % % Write the data to external file.
@@ -149,7 +149,7 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 		Ue_c = interp1(gust_alt, Ue_c_alt, h/C.ft2m, "linear");
 		Ue_d = interp1(gust_alt, Ue_d_alt, h/C.ft2m, "linear");
 
- 		% Airplaine weight ratio and gust alleviation factor.
+		% Airplaine weight ratio and gust alleviation factor.
 		% FIX: we should use the CL_alpha of the plane, not the wing.
 		mu = 2 * D.Plane.MTOW * C.g / (rho * D.Wing.CL_alpha * D.Wing.mac * C.g * D.Wing.surf);
 		F = 0.88 * mu / (5.3 + mu);
@@ -159,12 +159,12 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 		ng_c_plus_EAS  = @(EAS) 1 + F*C.rho_sl*D.Wing.surf*D.Wing.CL_alpha*(Ue_c*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
 		ng_c_minus_EAS = @(EAS) 1 - F*C.rho_sl*D.Wing.surf*D.Wing.CL_alpha*(Ue_c*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
 		ng_d_plus_EAS  = @(EAS) 1 + F*C.rho_sl*D.Wing.surf*D.Wing.CL_alpha*(Ue_d*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
- 		ng_d_minus_EAS = @(EAS) 1 - F*C.rho_sl*D.Wing.surf*D.Wing.CL_alpha*(Ue_d*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
+		ng_d_minus_EAS = @(EAS) 1 - F*C.rho_sl*D.Wing.surf*D.Wing.CL_alpha*(Ue_d*C.ft2m)*(EAS) / (2*D.Plane.MTOW*C.g);
 		% Convert the functions argument, to work with TAS.
 		ng_c_plus_TAS  = @(TAS) ng_c_plus_EAS(TAS  * TAS2EAS);
 		ng_c_minus_TAS = @(TAS) ng_c_minus_EAS(TAS * TAS2EAS);
 		ng_d_plus_TAS  = @(TAS) ng_d_plus_EAS(TAS  * TAS2EAS);
- 		ng_d_minus_TAS = @(TAS) ng_d_minus_EAS(TAS * TAS2EAS);
+		ng_d_minus_TAS = @(TAS) ng_d_minus_EAS(TAS * TAS2EAS);
 
 		% 2. Gust envelope.
 		%
@@ -179,7 +179,7 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 		% Point 1: intersections of ng_c_minus with positive stall line.
 		TAS_1 = double(vpasolve(tas_max_lift(ng_c_minus_TAS(TAS)) == TAS));
 		n_1   = ng_c_minus_TAS(TAS_1);
-		
+
 		% Point 2: intersections of ng_c_plus with positive stall line.
 		TAS_2 = double(vpasolve(tas_max_lift(ng_c_plus_TAS(TAS)) == TAS));
 		n_2   = ng_c_plus_TAS(TAS_2);
@@ -242,10 +242,11 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 			["S",   "A",   "B",   "C",   "D"]', ...
 			[EAS_S, EAS_A, EAS_B, EAS_C, EAS_D]');
 	end
+
 %% Plot envelope
 
-	function plot_envelope(ME, GE)
-		% PLOT_ENVELOPE  Plot the ME, GE and gust lines.
+	function plot_write(ME, GE)
+		% PLOT_WRITE  Plot and write the ME, GE and gust lines.
 
 		% Instantiate a figure object.
 		figure('WindowStyle', 'docked');
@@ -257,10 +258,10 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 		PurpleDark = [091, 037, 125] / 256;
 
 		% Plot maneuver envelope.
-		fill(ME.contour{:, 'EAS'} ./ C.kn2ms, ME.contour{:, 'n'}, TealDark, "FaceAlpha", 0.1);
+		fill(ME.contour.EAS ./ C.kn2ms, ME.contour.n, TealDark, "FaceAlpha", 0.1);
 
 		% Plot gust envelope.
-		fill(GE.contour{:, 'EAS'} ./ C.kn2ms, GE.contour{:, 'n'}, PurpleDark, "FaceAlpha", 0.1);
+		fill(GE.contour.EAS ./ C.kn2ms, GE.contour.n, PurpleDark, "FaceAlpha", 0.1);
 
 		% Plot gust lines.
 		v_lim = [0, 1.05 * V_d*TAS2EAS/C.kn2ms];
@@ -275,30 +276,35 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 		ylabel("Load factor");
 		grid;
 		axis padded;
+
+		% Write plotting data in external file, if desired.
+		if contains(opts, 'w')
+			write_ext();
+		end
+
+		function write_ext()
+			% WRITE_EXT	 Write plotting data in external file.
+
+			% Generate the filename of the object to save.
+			gen_fname = @(obj) fullfile(file_dir, strcat("../Plot/", obj, "-", num2str(h/C.ft2m), "ft.dat"));
+
+			% Save relevant objects to plot.
+			%
+			% Maneuver envelope.
+			writematrix([ME.contour.EAS./C.kn2ms, ME.contour.n], gen_fname("ME"));
+			% Gust envelope.
+			writematrix([GE.contour.EAS./C.kn2ms, GE.contour.n], gen_fname("GE"));
+			% Gust lines.
+			GL = [v_lim', ...
+				GE.line.ng_c_plus(v_lim.*C.kn2ms)'  ...
+				GE.line.ng_c_minus(v_lim.*C.kn2ms)' ...
+				GE.line.ng_d_plus(v_lim.*C.kn2ms)'  ...
+				GE.line.ng_d_minus(v_lim.*C.kn2ms)' ];
+			writematrix(GL, gen_fname("GL"));
+			% Design speeds.
+			writematrix( ...
+				[Speeds{:, 2}./C.kn2ms, ones(size(Speeds{:, 2}))], ...
+				gen_fname("FE_speeds"));
+		end
 	end
-
-%% Write plot to extenal file
-
-% 	function write_ext()
-% 		% Name external file according to the units used.
-% 		if ISoU; units = "imperial"; else; units = "metric"; end
-% 		filename = strcat("Plot/maneuver_envelope-", units, "-alt_", num2str(h), ".dat");
-% 
-% 		% Write data to file.
-% 		writematrix([EAS; n;]', filename);
-% 
-% 		% Conversion in ISoU if desired.
-% 		if ISoU
-% 			EAS_st = EAS_st ./ kn2ms;
-% 			EAS_A  = EAS_A  ./ kn2ms;
-% 			EAS_C  = EAS_C  ./ kn2ms;
-% 			EAS_D  = EAS_D  ./ kn2ms;
-% 		end
-% 		if ISoU; units = "kn"; else; units = "m/s"; end
-% 		fprintf("Stall speed at cruise: %f " + units + "\n", EAS_st);
-% 		fprintf("Maximum lift speed:    %f " + units + "\n", EAS_A);
-% 		fprintf("Design cruise speed:   %f " + units + "\n", EAS_C);
-% 		fprintf("Design dive speed:     %f " + units + "\n", EAS_D);
-% 	end
-
 end
