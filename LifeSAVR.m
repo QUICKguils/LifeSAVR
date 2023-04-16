@@ -45,6 +45,6 @@ propulsion();
 flight_envelope(C.h_cr, opts);
 aero_loads();
 struct_loads();
-%struct_stress();
+struct_stress(opts);
 
 end

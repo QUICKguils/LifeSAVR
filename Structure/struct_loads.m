@@ -208,24 +208,27 @@ end
 		W_wing = 0.5 * D.Wing.mass * C.g;
 		% Coordinates of the wing COG [m].
 		x_wing = D.Comp{"Wings", "COG"}(1);
-		z_wing = D.Comp{"Wings", "COG"}(2);
-		y_wing = D.Comp{"Wings", "COG"}(3);
+		y_wing = D.Comp{"Wings", "COG"}(2);
+		z_wing = D.Comp{"Wings", "COG"}(3);
 
 		% Weight of the fuel stored in one wing [N].
-		W_fuel = 0.5 * D.Comp{"Fuel fuselage", "Mass"} * C.g;
+		W_fuel = 0.5 * D.Comp{"Fuel Wing", "Mass"} * C.g;
 		% Coordinates of the wing fuel COG [m].
-		x_fuel = D.Comp{"Fuel fuselage", "COG"}(1);
-		z_fuel = D.Comp{"Fuel fuselage", "COG"}(2);
-		y_fuel = D.Comp{"Fuel fuselage", "COG"}(3);
+		x_fuel = D.Comp{"Fuel Wing", "COG"}(1);
+		y_fuel = D.Comp{"Fuel Wing", "COG"}(2);
+		z_fuel = D.Comp{"Fuel Wing", "COG"}(3);
 
 		% Compute the relevant MNT loads.
 		% FIX: take into account the wing pitching moment.
+		% FIX: choose reference origin from which to compute the moments.
 		Tx = ( al.n*(W_wing + W_fuel) - al.L/2) * sind(aoi) + al.D_wing * cosd(aoi);
 		Tz = (-al.n*(W_wing + W_fuel) + al.L/2) * cosd(aoi) + al.D_wing * sind(aoi);
 		Mx = (-al.n*(W_wing*y_wing + W_fuel*y_fuel) - al.L/2*y_wing) * cosd(aoi);
 		Mz = (-al.n*(W_wing*y_wing + W_fuel*y_fuel) - al.L/2*y_wing) * sind(aoi);
-		My = (-al.n*(W_wing*x_wing + W_fuel*x_fuel) - al.L/2*x_wing + al.D_wing/2*x_wing) * cosd(aoi) ...
-			+(-al.n*(W_wing*z_wing + W_fuel*z_fuel) - al.L/2*z_wing - al.D_wing/2*z_wing) * sind(aoi);
+		My = (-al.n*(W_fuel*(x_fuel-x_wing))) * cosd(aoi);
+		% TODO: better position in order to have correct Loads.
+% 		My = (-al.n*(W_wing*x_wing + W_fuel*x_fuel) - al.L/2*x_wing + al.D_wing/2*x_wing) * cosd(aoi) ...
+% 			+(-al.n*(W_wing*z_wing + W_fuel*z_fuel) - al.L/2*z_wing - al.D_wing/2*z_wing) * sind(aoi);
 
 		% Return the computed loads.
 		loads = table(x, al.n, al.EAS, Tx, Tz, Mx, My, Mz);
