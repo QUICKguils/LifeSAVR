@@ -36,10 +36,6 @@ file_dir = fileparts(mfilename("fullpath"));
 C = load(fullfile(file_dir, "../constants.mat"));
 D = load(fullfile(file_dir, "../data.mat"));
 
-% Aliases.
-FL = D.FusLoads;   % MNT in the selected fuselage cs, for each CP of the FE.
-WL = D.WingLoads;  % MNT in the selected wing     cs, for each CP of the FE.
-
 % Utilities.
 addpath(genpath(fullfile(file_dir, "../Utils")));
 
@@ -73,8 +69,8 @@ FusStresses = table(...
 	'VariableNames', {'x', 'n', 'EAS', 'B_sigma_xx', 'B_min', 'q', 't_min'});
 
 % Compute stresses for all the cs and CP.
-for row = 1:height(FL)
-	fl = FL(row, :);
+for row = 1:height(D.FusLoads)
+	fl = D.FusLoads(row, :);
 	FusStresses(row, :) = fuselage_stresses(fl);
 end
 
@@ -99,19 +95,19 @@ WingStresses = table(...
 	'VariableNames', {'y', 'n', 'EAS', 'B_sigma_yy', 'B_min', 'q', 't_min'});
 
 % Get the wing geometry parameters.
-wg = wing_geometry;  % TODO: should technically loop for all cs.
+WingGeo = wing_geometry;  % TODO: should technically loop for all cs.
 
 % Compute stresses for all the cs and CP.
-for row = 1:height(WL)
-	wl = WL(row, :);
-	WingStresses(row, :) = wing_stresses(wg, wl);
+for row = 1:height(D.WingLoads)
+	wl = D.WingLoads(row, :);
+	WingStresses(row, :) = wing_stresses(WingGeo, wl);
 end
 
 WingDesign.MinBoomArea      = max(WingStresses.B_min);
 WingDesign.MinSkinThickness = max(WingStresses.t_min);
 
 % Save relevant data structures in data.mat.
-save(fullfile(file_dir, "../data.mat"), "WingStresses", 'WingDesign', "-append");
+save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign', "-append");
 
 %% Fuselage
 
@@ -442,10 +438,9 @@ save(fullfile(file_dir, "../data.mat"), "WingStresses", 'WingDesign', "-append")
 		z_CG = sum([S.P2.z, S.P3.z, S.P4.z] / ns.wing);
 
 		% Moment of area per unit boom area of the profile [m²].
-		% Calculated relative to the centroid.
-		I.xx2B = sum((S.AF.z - z_CG).^2);
-		I.zz2B = sum((S.AF.x - x_CG).^2);
-		I.xz2B = sum((S.AF.x - x_CG) .* (S.AF.z - z_CG));
+		I.xx2B = sum(S.AF.z.^2);
+		I.zz2B = sum(S.AF.x.^2);
+		I.xz2B = sum(S.AF.x .* S.AF.z);
 
 		% Build return data structure.
 		WingGeo.N = N;
@@ -527,7 +522,7 @@ save(fullfile(file_dir, "../data.mat"), "WingStresses", 'WingDesign', "-append")
 		end
 
 		pc_derived = derive_pc(pc);
-		length = integral(@(t) norm(pc_derived.s(t)), ti, tf, ArrayValued=true);
+		length = integral(@(t) norm(pc_derived.s(t)), ti, tf, 'ArrayValued', true);
 	end
 
 	function area = cell_area(cell)  % PERF: too slow
@@ -535,7 +530,7 @@ save(fullfile(file_dir, "../data.mat"), "WingStresses", 'WingDesign', "-append")
 		%
 		% Green's formula: A = 0.5 * int_0^1((x(t)y'(t)-x'(t)y(t))dt.
 		dCdt = derive_pc(cell);
-		area = 0.5 * integral(@(t) cell.x(t)*dCdt.z(t) - dCdt.x(t)*cell.z(t), 0, 1, ArrayValued=true);
+		area = 0.5 * integral(@(t) cell.x(t)*dCdt.z(t) - dCdt.x(t)*cell.z(t), 0, 1, 'ArrayValued', true);
 	end
 
 	function plot_wing(wg)
