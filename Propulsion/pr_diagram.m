@@ -93,7 +93,6 @@ W_dry = W_nofuel + W_fuel_dry;
 R_loiter = C.t_loiter_search * C.V_loiter;
 % Total mission range [m].
 R_mission = C.range_ingress + R_loiter + C.range_egress;
-fprintf("Total range of the mission: %d km.\n", R_mission/1e3);
 
 %% Payload-range for the desired fight condition.
 
@@ -107,8 +106,6 @@ if ISoU
 	W_dry_R    = W_dry_R    ./ C.lb2kg;
 	W_tot_R    = W_tot_R    ./ C.lb2kg;
 end
-
-disp(R(end));
 
 % Plot the PR diagram.
 if contains(opts, 'p')
