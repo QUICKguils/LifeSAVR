@@ -1,8 +1,6 @@
 % TODO:
 % - Assumptions on fuselage and wings specs are made a little bit
 %   everywhere. Check that when more precise values are available.
-% - Pass x_cs and y_cs as arguments, and define default values.
-% - Wait for more precise CAD values.
 % - Implement y option for wings_loads, if we have time.
 
 function struct_loads(x_cs, y_cs)

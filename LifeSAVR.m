@@ -39,7 +39,7 @@ C = load(fullfile(root_dir, "constants.mat"));
 
 % Propulsion.
 propulsion();
-%pr_diagram('s', opts);
+pr_diagram('s', opts);
 
 % Structure.
 flight_envelope(C.h_cr, opts);

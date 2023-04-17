@@ -1,11 +1,8 @@
 % TODO:
-% - Data that are number labelled should hold in cells, not wild
-%   variable names.
+% - The data organisation is messy.
 % - Some values are guessed. Wait for more precise values.
 % - Lots of hardcoded values.
 % - perf: cell_area is way too slow.
-% - Lots of computation are redudant and should not be done for each
-%   Loads table lines. For examle, the stringers coordinates.
 % - We neglected the air induction system.
 % - the pc structure is not very clean. Fins a way to properly extract x
 %   and z from s, without explicitely define their expressions.

@@ -66,11 +66,6 @@ if contains(opts, 'p')
 	plot_write(ME, GE);
 end
 
-% % Write the data to external file.
-% if contains(opts, 'w')
-% 	write_ext();
-% end
-
 % Collect the relevant quantities to save, in a structure named `FE`.
 FE.contour  = ME.contour;
 FE.CP       = ME.CP;
