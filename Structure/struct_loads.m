@@ -231,6 +231,6 @@ end
 % 			+(-al.n*(W_wing*z_wing + W_fuel*z_fuel) - al.L/2*z_wing - al.D_wing/2*z_wing) * sind(aoi);
 
 		% Return the computed loads.
-		loads = table(x, al.n, al.EAS, Tx, Tz, Mx, My, Mz);
+		loads = table(y, al.n, al.EAS, Tx, Tz, Mx, My, Mz);
 	end
 end
