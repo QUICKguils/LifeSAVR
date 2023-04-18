@@ -1,6 +1,3 @@
-% TODO:
-% - Finish to implement `opts`.
-
 function LifeSAVR(opts)
 % LIFESAVR  triggers all the code of the project.
 %
@@ -9,6 +6,8 @@ function LifeSAVR(opts)
 %	  'p' -> Enable plots creation.
 %	  'w' -> Write plotting data in external file.
 %     'i' -> Plot and write data with imperial system of units (abbr. ISoU).
+
+close all;
 
 %% Set path and global MAT files
 
