@@ -2,7 +2,7 @@
 % - The data organisation is messy.
 % - Some values are guessed. Wait for more precise values.
 % - Lots of hardcoded values.
-% - perf: cell_area is way too slow.
+% - perf: enclosed_area is way too slow.
 % - We neglected the air induction system.
 % - the pc structure is not very clean. Fins a way to properly extract x
 %   and z from s, without explicitely define their expressions.
@@ -74,6 +74,7 @@ for row = 1:height(D.FusLoads)
 	FusStresses(row, :) = fuselage_stresses(fl);
 end
 
+% Relevant fuselage design data.
 FusDesign.MinBoomArea      = max(FusStresses.B_min);
 FusDesign.MinSkinThickness = max(FusStresses.t_min);
 
@@ -103,6 +104,7 @@ for row = 1:height(D.WingLoads)
 	WingStresses(row, :) = wing_stresses(WingGeo, wl);
 end
 
+% Relevant wing design data.
 WingDesign.MinBoomArea      = max(WingStresses.B_min);
 WingDesign.MinSkinThickness = max(WingStresses.t_min);
 
@@ -189,9 +191,6 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		% Minimum thickness of the skin [m].
 		t_min = max(abs(q_tot)) / tau_max;
 
-		% Rivets sizing.
-		% R = - fl.Ty/Izz2B*y_i(:,1) - fl.Tz/Iyy2B*z_i(:,1);
-
 		% Return the computed stresses and designs.
 		stresses = table(fl.x, fl.n, fl.EAS, B_sigma_xx, B_min, q_tot, t_min);
 	end
@@ -206,7 +205,7 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 
 		% 0. Design data and preliminary computations.
 
-		% Set frame of reference at the centroid.
+		% Set frame of reference at the centroid.  % TODO: not super clean
 		x_af  = wg.S.AF.x - wg.CG.x;
 		z_af  = wg.S.AF.z - wg.CG.z;
 		x_P2  = wg.S.P2.x - wg.CG.x;
@@ -268,7 +267,6 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		res = vpasolve(eqns, [tr, q1, q2]);
 
 		% Unpack the results of interest.
-		dtheta_dx = double(res.tr);
 		q_My(1)   = double(res.q1);
 		q_My(2)   = double(res.q2);
 
@@ -332,9 +330,8 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		res = vpasolve(eqns, [tr, q1, q2]);
 
 		% Unpack the results of interest.
-		dtheta_dx = double(res.tr);
-		qc(1)   = double(res.q1);
-		qc(2)   = double(res.q2);
+		qc(1) = double(res.q1);
+		qc(2) = double(res.q2);
 
 		% 2.3. Total shear flow and miminum skin thickness.
 
@@ -403,10 +400,6 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		Cell{1} = join_pc(P{3}, reverse_pc(P{6}));
 		Cell{2} = join_pc(join_pc(P{2}, P{6}), join_pc(P{4}, reverse_pc(P{7})));
 		Cell{3} = join_pc(join_pc(P{2}, P{3}), join_pc(P{4}, reverse_pc(P{7})));
-		% Cell areas.
-		A(1) = cell_area(Cell{1});
-		A(2) = cell_area(Cell{2});
-		A(3) = A(1) + A(2);
 
 		% Stringers of the profile.
 		% We call "stringers"... seriously, take a look at the course bruh.
@@ -442,14 +435,24 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		I.zz2B = sum(S.AF.x.^2);
 		I.xz2B = sum(S.AF.x .* S.AF.z);
 
+		% Swept area of the panels, from the CG.
+		Ah = cellfun(@(pc) swept_area(translate_pc(pc, x_CG, z_CG)), P);
+		% Cell areas.
+		A(1) = Ah(3) - Ah(6);
+		A(2) = Ah(2) + Ah(6) + Ah(4) + Ah(7);
+		A(3) = A(1) + A(2);
+		% NOTE: computing cell areas with `cellfun(@enclosed_area, Cell)` would
+		% be more elegant, but it leads to perf issues, and I don't know why.
+
 		% Build return data structure.
-		WingGeo.N = N;
-		WingGeo.P = P;
-		WingGeo.L = L;
-		WingGeo.C = Cell;
-		WingGeo.A = A;
-		WingGeo.S = S;
-		WingGeo.I = I;
+		WingGeo.N    = N;
+		WingGeo.P    = P;
+		WingGeo.Ah   = Ah;
+		WingGeo.L    = L;
+		WingGeo.C    = Cell;
+		WingGeo.A    = A;
+		WingGeo.S    = S;
+		WingGeo.I    = I;
 		WingGeo.CG.x = x_CG;
 		WingGeo.CG.z = z_CG;
 
@@ -485,6 +488,13 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		pc_reversed.z = @(t) pc.z(1-t);
 	end
 
+	function pc_translated = translate_pc(pc, x, z)
+		% TRANSLATE_PC  Translate the parametric curve.
+		pc_translated.x = @(t) pc.x(t) - x;
+		pc_translated.z = @(t) pc.z(t) - z;
+		pc_translated.s = @(t) [pc_translated.x(t), pc_translated.z(t)];
+	end
+
 	function pc_extracted = extract_pc(base_pc, ti, tf)
 		% EXTRACT_PC  Extract a parametric curve from an existing one.
 		pc_extracted.x = @(t) base_pc.x(ti + t*(tf-ti));
@@ -503,9 +513,7 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		% DERIVE_PC  Approximate derivative of a parametric curve.
 
 		% Default value for dt.
-		if nargin == 1
-			dt = 1e-5;
-		end
+		if nargin == 1; dt = 1e-5; end
 
 		pc_derived.x = @(t) (pc.x(t+dt) - pc.x(t)) ./ dt;
 		pc_derived.z = @(t) (pc.z(t+dt) - pc.z(t)) ./ dt;
@@ -516,21 +524,23 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		% PC_LENGTH  Arc length of a parametric curve.
 
 		% Default: calculate the length of the entire curve.
-		if nargin == 1
-			ti = 0;
-			tf = 1;
-		end
+		if nargin == 1; ti = 0; tf = 1; end
 
 		pc_derived = derive_pc(pc);
 		length = integral(@(t) norm(pc_derived.s(t)), ti, tf, 'ArrayValued', true);
 	end
 
-	function area = cell_area(cell)  % PERF: too slow
-		% CELL_AREA  Area enclosed by a cell.
+	function area = swept_area(pc, ti, tf)  % PERF: too slow
+		% SWEPT_AREA  Arc area enclosed by a parametric curve.
 		%
-		% Green's formula: A = 0.5 * int_0^1((x(t)y'(t)-x'(t)y(t))dt.
-		dCdt = derive_pc(cell);
-		area = 0.5 * integral(@(t) cell.x(t)*dCdt.z(t) - dCdt.x(t)*cell.z(t), 0, 1, 'ArrayValued', true);
+		% Green's formula: A = 0.5 * int_ti^tf((x(t)y'(t)-x'(t)y(t))dt.
+
+		% Default: calculate the area enclosed by the entire curve.
+		if nargin == 1; ti = 0; tf = 1; end
+
+		dCdt = derive_pc(pc);
+		area = 0.5 * integral(@(t) pc.x(t)*dCdt.z(t) - dCdt.x(t)*pc.z(t), ti, tf, 'ArrayValued', true);
+		area = abs(area);
 	end
 
 	function plot_wing(wg)
