@@ -546,32 +546,20 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 	function plot_wing(wg)
 		% PLOT_WING  Plot the wing's geometry elements of the profile.
 
-		% Decorator function to normalize lengths.
-		dec = @(f) @(x) f(x)/D.Wing.c_root;
-
 		% Instantiate a figure object.
 		figure('WindowStyle','docked');
 		hold on;
 
 		% Panels.
-		fplot(dec(wg.P{1}.x), dec(wg.P{1}.z), [0, 1]);
-		fplot(dec(wg.P{2}.x), dec(wg.P{2}.z), [0, 1]);
-		fplot(dec(wg.P{3}.x), dec(wg.P{3}.z), [0, 1]);
-		fplot(dec(wg.P{4}.x), dec(wg.P{4}.z), [0, 1]);
-		fplot(dec(wg.P{5}.x), dec(wg.P{5}.z), [0, 1]);
-		fplot(dec(wg.P{6}.x), dec(wg.P{6}.z), [0, 1]);
-		fplot(dec(wg.P{7}.x), dec(wg.P{7}.z), [0, 1]);
+		cellfun(@(p) fplot(p.x, p.z, [0, 1]), wg.P);
 		% Nodes.
-		plot(wg.N{1}.x/D.Wing.c_root, wg.N{1}.z/D.Wing.c_root, 'o');
-		plot(wg.N{2}.x/D.Wing.c_root, wg.N{2}.z/D.Wing.c_root, 'o');
-		plot(wg.N{3}.x/D.Wing.c_root, wg.N{3}.z/D.Wing.c_root, 'o');
-		plot(wg.N{4}.x/D.Wing.c_root, wg.N{4}.z/D.Wing.c_root, 'o');
+		cellfun(@(n) plot(n.x, n.z, 'o'), wg.N);
 		% Stringers.
-		plot(wg.S.P2.x/D.Wing.c_root, wg.S.P2.z/D.Wing.c_root, '*');
-		plot(wg.S.P3.x/D.Wing.c_root, wg.S.P3.z/D.Wing.c_root, '*');
-		plot(wg.S.P4.x/D.Wing.c_root, wg.S.P4.z/D.Wing.c_root, '*');
+		plot(wg.S.P2.x, wg.S.P2.z, '*');
+		plot(wg.S.P3.x, wg.S.P3.z, '*');
+		plot(wg.S.P4.x, wg.S.P4.z, '*');
 		% COG.
-		plot(wg.CG.x/D.Wing.c_root, wg.CG.z/D.Wing.c_root, 'x');
+		plot(wg.CG.x, wg.CG.z, 'x');
 
 		% Dress the plot.
 		title('Geometry of the wing section');
