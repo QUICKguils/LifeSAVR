@@ -4,6 +4,7 @@
 % - Lots of hardcoded values.
 % - perf: enclosed_area is way too slow.
 % - We neglected the air induction system.
+% - take the wing taper into account.
 % - the pc structure is not very clean. Fins a way to properly extract x
 %   and z from s, without explicitely define their expressions.
 % - implement 'w' optional argument.
@@ -231,7 +232,7 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		% Structures>lesson 5>slide 17.
 		B_sigma_yy = ...
 			(  (Izz2B*wl.Mx + Ixz2B*wl.Mz) .* z_af   ...
-			  +(Ixz2B*wl.Mx + Ixx2B*wl.Mz) .* x_af ) ...
+			  -(Ixz2B*wl.Mx + Ixx2B*wl.Mz) .* x_af ) ...
 			/(Ixx2B*Izz2B - Ixz2B^2);
 
 		% Minimum area of the stringers [m²].
@@ -420,15 +421,10 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		S.AF.t = [S.P2.t, S.P3.t, S.P4.t];
 		S.AF.x = [S.P2.x, S.P3.x, S.P4.x];
 		S.AF.z = [S.P2.z, S.P3.z, S.P4.z];
-		% On cells.
-		S.C1.x = S.P3.x;
-		S.C1.z = S.P3.z;
-		S.C2.x = [S.P2.x, S.P4.x];
-		S.C2.z = [S.P2.z, S.P4.z];
 
 		% Centroid of the profile [m].
-		x_CG = sum([S.P2.x, S.P3.x, S.P4.x] / ns.wing);
-		z_CG = sum([S.P2.z, S.P3.z, S.P4.z] / ns.wing);
+		x_CG = sum(S.AF.x) / ns.wing;
+		z_CG = sum(S.AF.z) / ns.wing;
 
 		% Moment of area per unit boom area of the profile [m²].
 		I.xx2B = sum(S.AF.z.^2);
