@@ -85,15 +85,15 @@ save(fullfile(file_dir, "../data.mat"), "FusStresses", 'FusDesign', "-append");
 % 3. Wing computations.
 
 % Wing data.
-ns.P2 = 10;  % Number of stringers in panel 2.
-ns.P3 = 10;  % Number of stringers in panel 3.
-ns.P4 = 10;  % Number of stringers in panel 4.
+ns.P2 = 15;  % Number of stringers in panel 2.
+ns.P3 = 15;  % Number of stringers in panel 3.
+ns.P4 = 15;  % Number of stringers in panel 4.
 ns.wing = ns.P2 + ns.P3 + ns.P4;
 
 % This table contains the relevant stresses and resulting dimensions in
 % the selected wing cross sections, for al the CP.
 WingStresses = table(...
-	zeros(5, 1), zeros(5, 1), zeros(5, 1), zeros(5, ns.wing), zeros(5, 1), zeros(5, ns.wing+2), zeros(5, 1), ...
+	zeros(5, 1), zeros(5, 1), zeros(5, 1), zeros(5, ns.wing), zeros(5, 1), zeros(5, ns.wing-1), zeros(5, 1), ...
 	'VariableNames', {'y', 'n', 'EAS', 'B_sigma_yy', 'B_min', 'q', 't_min'});
 
 % Get the wing geometry parameters.
@@ -285,9 +285,9 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 			- (Ixx2B*wl.Tx-Ixz2B*wl.Tz)/(Ixx2B*Izz2B-Ixz2B^2) * x;
 
 		% Open shear flow in panel 3.
-		qo_P3 = zeros(1, ns.P3);
+		qo_P3 = zeros(1, ns.P3-1);
 		qo_P3(1) = 0;  % Because of the cut at this place.
-		for i = 2:ns.P3  % TODO: maybe it is ns.P3-1
+		for i = 2:ns.P3-1  % TODO: maybe it is ns.P3-1
 			qo_P3(i) = qo_P3(i-1) + qo(x_P3(i), z_P3(i));
 		end
 
@@ -295,9 +295,9 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		qo_P6 = - qo(x_P3(1), z_P3(1));  % Like q38 in slide 31.
 
 		% Open shear flow in panel 4.
-		qo_P4 = zeros(1, ns.P4);
+		qo_P4 = zeros(1, ns.P4-1);
 		qo_P4(1) = qo_P3(end) - qo_P6;  % Like Kirchoff first law.
-		for i = 2:ns.P4  % TODO: maybe it is ns.P4-1
+		for i = 2:ns.P4-1  % TODO: maybe it is ns.P4-1
 			qo_P4(i) = qo_P4(i-1) + qo(x_P4(i), z_P4(i));
 		end
 
@@ -305,9 +305,9 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		qo_P7 = - qo(x_P2(1), z_P2(1));
 
 		% Open shear flow in panel 2.
-		qo_P2 = zeros(1, ns.P2);
+		qo_P2 = zeros(1, ns.P2-1);
 		qo_P2(1) = 0;  % Because of the cut at this place.
-		for i = 2:ns.P2  % TODO: maybe it is ns.P2-1
+		for i = 2:ns.P2-1  % TODO: maybe it is ns.P2-1
 			qo_P2(i) = qo_P2(i-1) + qo(x_P2(i), z_P2(i));
 		end
 
@@ -324,7 +324,7 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		eqns = [ ...
 			tr == 1/(2*wg.A(1)*mu) * (wg.L(3)*q1 + wg.L(6)*(q1-q2)), ...
 			tr == 1/(2*wg.A(2)*mu) * ((wg.L(2)+wg.L(4))*q2 + wg.L(6)*(q2-q1)), ...
-			wl.Mx == 2 * (wg.A(1)*q1 + wg.A(2)*q2);
+			wl.My == 2 * (wg.A(1)*q1 + wg.A(2)*q2);
 		];
 
 		% Solve the system.
