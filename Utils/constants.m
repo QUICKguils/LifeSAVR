@@ -6,7 +6,7 @@ function constants
 
 %% Conversion factors.
 
-C.in2m     = 2.54;         % Inch            ->  meter.
+C.in2m     = 0.0254;       % Inch            ->  meter.
 C.ft2m     = 0.3048;       % Foot            ->  meter.
 C.mi2m     = 1609.344;     % Mile            ->  meter.
 C.nmi2m    = 1852;         % Nautical mile   ->  meter.
