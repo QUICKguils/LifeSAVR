@@ -1,4 +1,5 @@
 % TODO:
+% - wing_loads() is quite garbage.
 % - Assumptions on fuselage and wings specs are made a little bit
 %   everywhere. Check that when more precise values are available.
 % - Implement y option for wings_loads, if we have time.
@@ -202,31 +203,28 @@ end
 		% Angle of incidence of the plane [°].
 		aoi = al.aoa - D.Wing.aoi;
 		
+		% Lift of one wing [N].
+		L = 0.5 * al.L;
 		% Weight of one wing [N].
-		W_wing = 0.5 * D.Wing.mass * C.g;
+		W_wing = - 0.5 * D.Wing.mass * C.g;
+		% Weight of the fuel stored in one wing [N].
+		W_fuel = - 0.5 * D.Comp{"Fuel Wing", "Mass"} * C.g;
+
 		% Coordinates of the wing COG [m].
 		x_wing = D.Comp{"Wings", "COG"}(1);
 		y_wing = D.Comp{"Wings", "COG"}(2);
-		z_wing = D.Comp{"Wings", "COG"}(3);
-
-		% Weight of the fuel stored in one wing [N].
-		W_fuel = 0.5 * D.Comp{"Fuel Wing", "Mass"} * C.g;
 		% Coordinates of the wing fuel COG [m].
 		x_fuel = D.Comp{"Fuel Wing", "COG"}(1);
 		y_fuel = D.Comp{"Fuel Wing", "COG"}(2);
-		z_fuel = D.Comp{"Fuel Wing", "COG"}(3);
 
 		% Compute the relevant MNT loads.
 		% FIX: take into account the wing pitching moment.
 		% FIX: choose reference origin from which to compute the moments.
-		Tx = ( al.n*(W_wing + W_fuel) - al.L/2) * sind(aoi) + al.D_wing * cosd(aoi);
-		Tz = (-al.n*(W_wing + W_fuel) + al.L/2) * cosd(aoi) + al.D_wing * sind(aoi);
-		Mx = (-al.n*(W_wing*y_wing + W_fuel*y_fuel) - al.L/2*y_wing) * cosd(aoi);
-		Mz = (-al.n*(W_wing*y_wing + W_fuel*y_fuel) - al.L/2*y_wing) * sind(aoi);
+		Tx = ( al.n*(W_wing + W_fuel) + L) * sind(aoi) + al.D_wing * cosd(aoi);
+		Tz = ( al.n*(W_wing + W_fuel) + L) * cosd(aoi) + al.D_wing * sind(aoi);
+		Mx = (-al.n*(W_wing*y_wing + W_fuel*y_fuel) - L*y_wing) * cosd(aoi);
+		Mz = (-al.n*(W_wing*y_wing + W_fuel*y_fuel) - L*y_wing) * sind(aoi);
 		My = (-al.n*(W_fuel*(x_fuel-x_wing))) * cosd(aoi);
-		% TODO: better position in order to have correct Loads.
-% 		My = (-al.n*(W_wing*x_wing + W_fuel*x_fuel) - al.L/2*x_wing + al.D_wing/2*x_wing) * cosd(aoi) ...
-% 			+(-al.n*(W_wing*z_wing + W_fuel*z_fuel) - al.L/2*z_wing - al.D_wing/2*z_wing) * sind(aoi);
 
 		% Return the computed loads.
 		loads = table(y, al.n, al.EAS, Tx, Tz, Mx, My, Mz);
