@@ -287,29 +287,29 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		% Open shear flow in panel 3.
 		qo_P3 = zeros(1, ns.P3-1);
 		qo_P3(1) = 0;  % Because of the cut at this place.
-		for i = 2:ns.P3-1  % TODO: maybe it is ns.P3-1
+		for i = 2:ns.P3-1
 			qo_P3(i) = qo_P3(i-1) + qo(x_P3(i), z_P3(i));
 		end
-
-		% Open shear flow in panel 6.
-		qo_P6 = - qo(x_P3(1), z_P3(1));  % Like q38 in slide 31.
-
-		% Open shear flow in panel 4.
-		qo_P4 = zeros(1, ns.P4-1);
-		qo_P4(1) = qo_P3(end) - qo_P6;  % Like Kirchoff first law.
-		for i = 2:ns.P4-1  % TODO: maybe it is ns.P4-1
-			qo_P4(i) = qo_P4(i-1) + qo(x_P4(i), z_P4(i));
-		end
-
-		% Open shear flow in panel 7.
-		qo_P7 = - qo(x_P2(1), z_P2(1));
 
 		% Open shear flow in panel 2.
 		qo_P2 = zeros(1, ns.P2-1);
 		qo_P2(1) = 0;  % Because of the cut at this place.
-		for i = 2:ns.P2-1  % TODO: maybe it is ns.P2-1
+		for i = 2:ns.P2-1
 			qo_P2(i) = qo_P2(i-1) + qo(x_P2(i), z_P2(i));
 		end
+
+		% Open shear flow in panel 6.
+		qo_P6 = qo_P2(end) + qo(x_P2(end), z_P2(end));  % Continues from panel 2.
+
+		% Open shear flow in panel 4.
+		qo_P4 = zeros(1, ns.P4-1);
+		qo_P4(1) = qo_P3(end) + qo_P6;  % Like Kirchoff first law.
+		for i = 2:ns.P4-1
+			qo_P4(i) = qo_P4(i-1) + qo(x_P4(i), z_P4(i));
+		end
+
+		% Open shear flow in panel 7.
+		qo_P7 = qo_P4(end) + qo(x_P2(1), z_P2(1));  % Continues from panel 4.
 
 		% 2.2.2. Closed shear flows at cut (correction).
 		%
