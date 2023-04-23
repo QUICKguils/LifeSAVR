@@ -74,9 +74,9 @@ engine_table("CFE700",      :) = {"CFE",                    20.24e3, 1.85e-5, 2,
 engine_table("HF120",       :) = {"GE Honda",               9.1e3,   1.99e-5, 2.9,  0.8,  0.5};
 
 % Select one engine.
-engine = table2struct(engine_table("FJ44-4A", :));
+engine = engine_table("FJ44-4A", :);
 
-%% Estimation of the thrust needed for dash speed
+%% Estimation of the thrust needed for cruise speed
 % Slides 27 and following, lesson 2.
 
 % Estimation of e is now calculated in the wing part.
@@ -87,11 +87,12 @@ engine = table2struct(engine_table("FJ44-4A", :));
 % % Linear interpolation for a sweep angle of Lambda.
 % e = e_straight + (e_swept - e_straight)/30 * D.Wing.sweep;
 
-% Estimation of the drag coefficient.
-Cd = D.Plane.CD_0 + D.Wing.CL_cr^2 / (D.Wing.e * pi * D.Wing.AR);
+% Estimation of Cd in now calculated in the drag part.
+% % Estimation of the drag coefficient.
+% Cd = D.Plane.CD_0 + D.Wing.CL_cr^2 / (D.Wing.e * pi * D.Wing.AR);
 
 % Thrust at cruise must equal the drag [N].
-F_cr = 0.5 * C.rho_cr * C.V_cr^2 * D.Wing.surf * Cd;
+F_cr = 0.5 * C.rho_cr * C.V_cr^2 * D.Wing.surf * D.Plane.CD_cr;
 
 %% Cruise thrust to uninstalled thrust
 % The uninstalled thrust corresponds to the thrust measured in lab
@@ -111,10 +112,10 @@ SLS2cr = thrust_SLSconv(C.V_cr, C.h_cr, engine.BPR, engine.G);
 F_sls = F_cr / SLS2cr;
 
 % Installed thrust [N].
-% Take a safety of around 20% more (according to T. Lambert).
+% Take a safety of around 15% more (according to T. Lambert).
 % The plane actually need more thrust than for the cruise:
 % we have to make turns, accelerations, maybe steep climbs, etc.
-safety_thrust = 0.2;
+safety_thrust = 0.15;
 F_installed = F_sls * (1 + safety_thrust);
 
 % Thrust to weight ratio.
@@ -139,17 +140,17 @@ assert(engine.Thrust >= F_uninstalled, ...
 %% Design cruise Mach and design dive Mach
 % The design cruise Mach is defined as the Mach number obtained at
 % maximum engine thrust, in cruising conditions.
-% The design dive Mach can be calculated as 1.07 times the design Mach.
+% The design dive Mach can be calculated as 1.25 times the design Mach.
 % Aircraft Structures>lesson 1>slides 7 and 11.
 
 % Maximum thrust at cruise [N].
 % We just have to revert steps of the preceding section, given the
 % uninstalled thrust of the selected engine.
-F_c = engine.Thrust * (1 - install_loss) / (1 + safety_thrust) * SLS2cr;
+F_c = engine.Thrust * (1 - install_loss) * SLS2cr;
 
 % Design cruise speed [m/s].
 % Obtained through the thrust-drag equality.
-V_c = sqrt(F_c / (0.5 * C.rho_cr * D.Wing.surf * Cd));
+V_c = sqrt(F_c / (0.5 * C.rho_cr * D.Wing.surf * D.Plane.CD_cr));
 
 % Design cruise and dive mach numbers.
 M_c = V_c / C.a_cr;
@@ -178,7 +179,7 @@ safety_bad_engine = 5e-2;
 safety_trapped_fuel = 1e-2;
 
 % Estimation of the thrust needed at loiter [N].
-F_loiter = 0.5 * C.rho_cr * C.V_loiter^2 * D.Wing.surf * Cd;
+F_loiter = 0.5 * C.rho_cr * C.V_loiter^2 * D.Wing.surf * D.Plane.CD_loiter;
 
 % Summing amout of fuel required for all the mission steps [kg].
 W_fuel = ...
@@ -217,7 +218,6 @@ Propu.SFC_loiter    = SFC_loiter;
 Propu.W_fuel        = W_fuel;
 Propu.FW_ratio      = FW_ratio;
 Propu.vol_tank      = vol_tank;
-Propu.CD_plane      = Cd;
 
 % Save Propu in data.mat.
 save(fullfile(file_dir, "../data.mat"), "Propu", "-append");
