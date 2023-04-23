@@ -299,7 +299,7 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		end
 
 		% Open shear flow in panel 6.
-		qo_P6 = qo_P2(end) + qo(x_P2(end), z_P2(end));  % Continues from panel 2.
+		qo_P6 = qo_P2(end) + 2 * qo(x_P2(end), z_P2(end));  % Continues from panel 2.
 
 		% Open shear flow in panel 4.
 		qo_P4 = zeros(1, ns.P4-1);
@@ -309,7 +309,7 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		end
 
 		% Open shear flow in panel 7.
-		qo_P7 = qo_P4(end) + qo(x_P2(1), z_P2(1));  % Continues from panel 4.
+		qo_P7 = qo_P4(end) + qo(x_P4(end), z_P4(end));  % Continues from panel 4.
 
 		% 2.2.2. Closed shear flows at cut (correction).
 		%
@@ -324,7 +324,8 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		eqns = [ ...
 			tr == 1/(2*wg.A(1)*mu) * (wg.L(3)*q1 + wg.L(6)*(q1-q2)), ...
 			tr == 1/(2*wg.A(2)*mu) * ((wg.L(2)+wg.L(4))*q2 + wg.L(6)*(q2-q1)), ...
-			wl.My == 2 * (wg.A(1)*q1 + wg.A(2)*q2);
+			1e3 == 2 * (wg.A(1)*q1 + wg.A(2)*q2);
+			%wl.My == 2 * (wg.A(1)*q1 + wg.A(2)*q2);
 		];
 
 		% Solve the system.
@@ -333,6 +334,8 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		% Unpack the results of interest.
 		qc(1) = double(res.q1);
 		qc(2) = double(res.q2);
+		disp(qc(1));
+		disp(qc(2));
 
 		% 2.3. Total shear flow and miminum skin thickness.
 
@@ -535,7 +538,8 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		if nargin == 1; ti = 0; tf = 1; end
 
 		dCdt = derive_pc(pc);
-		area = 0.5 * integral(@(t) pc.x(t)*dCdt.z(t) - dCdt.x(t)*pc.z(t), ti, tf, 'ArrayValued', true);
+		integrand = @(t) pc.x(t) * dCdt.z(t) - dCdt.x(t) * pc.z(t);
+		area = 0.5 * integral(integrand, ti, tf, 'ArrayValued', true);
 		area = abs(area);
 	end
 

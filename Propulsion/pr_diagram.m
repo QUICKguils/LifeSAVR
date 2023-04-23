@@ -186,7 +186,7 @@ function [R, W_empty_R, W_nofuel_R, W_dry_R, W_tot_R] = payload_range(condition,
 	end
 
 	% Aerodynamic efficiency.
-	eta_c = M * D.Wing.CL_cr/D.Propu.CD_plane;
+	eta_c = M * D.Wing.CL_cr/D.Plane.CD_cr;
 
 	% Segment 1:
 	% - Constant W_payload_1 = C.W_payload.

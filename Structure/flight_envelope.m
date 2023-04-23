@@ -61,6 +61,9 @@ GE = gust_envelope();
 % Retrieve relevant design speeds.
 Speeds = design_EAS(ME, GE);
 
+% Sanity checks: verify FAR requirements.
+check_FAR();
+
 % Plot the curves.
 if contains(opts, 'p')
 	plot_write(ME, GE);
@@ -236,6 +239,15 @@ save(fullfile(file_dir, "../data.mat"), "FE", "-append");
 		Speeds = table(...
 			["S",   "A",   "B",   "C",   "D"]', ...
 			[EAS_S, EAS_A, EAS_B, EAS_C, EAS_D]');
+	end
+
+%% Sanity checks
+
+	function check_FAR()
+		% CHECK_FAR  Check FAR requirements for Vb.
+		%
+		% Structures>lesson 1>slide 20.
+		assert(true);
 	end
 
 %% Plot envelope

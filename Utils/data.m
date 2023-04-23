@@ -187,9 +187,11 @@ Comp.Mass = Comp.Mass .* C.lb2kg;
 
 %% Plane
 
-Plane.MTOW  = sum(Comp.Mass);                           % MTOW [kg].
-Plane.COG   = sum(Comp.Mass .* Comp.COG) / Plane.MTOW;  % COG [m].
-Plane.CD_0  = 0.017;                                    % Zero lift drag coefficient.
+Plane.MTOW      = sum(Comp.Mass);                           % MTOW [kg].
+Plane.COG       = sum(Comp.Mass .* Comp.COG) / Plane.MTOW;  % COG [m].
+Plane.CD_0      = 0.017;                                    % Zero lift drag coefficient.
+Plane.CD_cr     = 0.0232;                                   % Drag in cruise conditions.
+Plane.CD_loiter = 0.0291;                                   % Drag in loiter conditions.
 
 %% Fuselage
 %
