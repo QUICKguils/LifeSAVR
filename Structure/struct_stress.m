@@ -345,8 +345,6 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		% Unpack the results of interest.
 		qc(1) = double(res.q1);
 		qc(2) = double(res.q2);
-		disp(qc(1));
-		disp(qc(2));
 
 		% 2.3. Total shear flow and miminum skin thickness.
 
@@ -450,7 +448,7 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		% Cell areas.
 		A(1) = Ah(3) - Ah(6);
 		A(2) = Ah(2) + Ah(6) + Ah(4) + Ah(7);
-		A(3) = A(1) + A(2);
+		A(3) = Ah(1) + Ah(5) - Ah(7);
 		% NOTE: computing cell areas with `cellfun(@enclosed_area, Cell)` would
 		% be more elegant, but it leads to perf issues, and I don't know why.
 
