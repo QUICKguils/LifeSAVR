@@ -224,7 +224,7 @@ end
 		Tz = ( al.n*(W_wing + W_fuel) + L) * cosd(aoi) + al.D_wing * sind(aoi);
 		Mx = (-al.n*(W_wing*y_wing + W_fuel*y_fuel) - L*y_wing) * cosd(aoi);
 		Mz = (-al.n*(W_wing*y_wing + W_fuel*y_fuel) - L*y_wing) * sind(aoi);
-		My = (-al.n*(W_fuel*(x_fuel-x_wing))) * cosd(aoi);
+		My = (-al.n*(W_fuel*(x_fuel-x_wing))) * cosd(aoi) + al.M_wing;
 
 		% Return the computed loads.
 		loads = table(y, al.n, al.EAS, Tx, Tz, Mx, My, Mz);

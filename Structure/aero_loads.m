@@ -38,6 +38,8 @@ addpath(genpath(fullfile(file_dir, "../Utils")));
 % Function global variables.
 h = D.FE.altitude;             % Atitude at which the CP are computed [m].
 [rho, ~, ~, ~] = ISA(h);       % Air properties at desired altitude.
+% TEST: take rho at seal level.
+% rho = C.rho_sl;
 TAS2EAS = sqrt(rho/C.rho_sl);  % Conversion from true airspeed to equivalent airspeed.
 CP = D.FE.CP;                  % Extract the CP table, just for conciseness.
 
@@ -51,9 +53,9 @@ CP{end+1, :} = [C.n_ff, D.FE.speed{4, 2}];
 % The data structure to save consists of a table that contains the
 % computed aerodynamic loads for all the CP.
 AeroLoads = table(...
-	'Size', [height(CP), 8], ...
-	'VariableNames', {'n',      'EAS',    'aoa',    'L',      'D_wing', 'P',      'F_fin',  'M_fus'}, ...
-	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'});
+	'Size', [height(CP), 9], ...
+	'VariableNames', {'n',      'EAS',    'aoa',    'L',      'D_wing', 'P',      'F_fin',  'M_fus',  'M_wing'}, ...
+	'VariableTypes', {'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'});
 
 % Distances bewteen airplane COG and relevant components [m].
 dist.wing2COG = D.Comp{"Wings",           "COG"} - D.Plane.COG;  % TODO: verify that MAC is at wing COG.
@@ -106,7 +108,7 @@ save(fullfile(file_dir, "../data.mat"), "AeroLoads", "-append");
 		% Pitching moment [N*m].
 		% Only take into account the wing pitching moment.
 		cm = D.Wing.airfoil.cm;
-		M  = 0.5 * rho * TAS^2 * D.Wing.surf * D.Wing.smc * cm;
+		M_wing  = 0.5 * rho * TAS^2 * D.Wing.surf * D.Wing.smc * cm;
 
 		% Plane inertia along Y-axis [kg*m²].
 		I_theta = sum(D.Comp.Mass .* vecnorm(D.Comp.COG - D.Plane.COG, 2, 2).^2);
@@ -132,7 +134,7 @@ save(fullfile(file_dir, "../data.mat"), "AeroLoads", "-append");
 		eqns = [ ...
 			L == 0.5 * rho * TAS^2 * D.Wing.surf * D.Wing.CL_alpha * deg2rad(aoa + D.Wing.aoa_zerolift), ...
 			L + P == cp.n*W - T*sind(aoi), ...
-			I_theta * theta_dd == - L*dx_w + D_wing*dz_w + D_body*dz_b - P*dx_HT - T*dist.E2COG(3) + M, ...
+			I_theta * theta_dd == - L*dx_w + D_wing*dz_w + D_body*dz_b - P*dx_HT - T*dist.E2COG(3) + M_wing, ...
 			dx_w  ==   cosd(aoi) * dist.wing2COG(1) + sind(aoi) * dist.wing2COG(3), ...
 			dz_w  == - sind(aoi) * dist.wing2COG(1) + cosd(aoi) * dist.wing2COG(3), ...
 			dx_HT ==   cosd(aoi) * dist.HT2COG(1)   + sind(aoi) * dist.HT2COG(3), ...
@@ -160,6 +162,6 @@ save(fullfile(file_dir, "../data.mat"), "AeroLoads", "-append");
 		M_fus = F_fin * D.VT.y;  % TODO: verify that using D.VT.y is correct.
 
 		% Return the computed loads.
-		loads = table(cp.n, cp.EAS, aoa_res, L_res, D_wing, P_res, F_fin, M_fus);
+		loads = table(cp.n, cp.EAS, aoa_res, L_res, D_wing, P_res, F_fin, M_fus, M_wing);
 	end
 end
