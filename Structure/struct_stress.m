@@ -1,8 +1,9 @@
 % TODO:
+% - effect of taper in not properly taken into account.
 % - The data organisation is messy.
 % - Some values are guessed. Wait for more precise values.
 % - Lots of hardcoded values.
-% - perf: enclosed_area is way too slow.
+% - perf: swept_area is way too slow.
 % - We neglected the air induction system.
 % - take the wing taper into account.
 % - the pc structure is not very clean. Fins a way to properly extract x
@@ -51,9 +52,9 @@ end
 
 % 1. General data.
 
-% Material properties.  TODO: update when matsel is done.
-mu        = 29.4e9;                % Shear modulus [Pa]. [28,29.4]
-sigma_y   = 510e6;                 % 0.1 % proof stress [Pa].[379,510] 
+% Material properties.
+mu        = 29.4e9;                % Shear modulus [Pa].
+sigma_y   = 510e6;                 % 0.1 % proof stress [Pa].
 tau_y     = sigma_y/sqrt(3);       % Shear strength [Pa] 
 sigma_max = sigma_y / C.K_safety;  % Max. axial stress allowed [Pa].
 tau_max   = tau_y   / C.K_safety;  % Max. shear stress allowed [Pa].
@@ -260,7 +261,7 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		% Define system of equations.
 		eqns = [ ...
 			tr == 1/(2*wg.A(1)*mu) * (wg.L(3)*q1 + wg.L(6)*(q1-q2)), ...
-			tr == 1/(2*wg.A(2)*mu) * ((wg.L(2)+wg.L(4))*q2 + wg.L(6)*(q2-q1)), ...
+			tr == 1/(2*wg.A(2)*mu) * ((wg.L(2)+wg.L(4))*q2 + wg.L(6)*(q2-q1) + wg.L(7)*q2), ...
 			wl.My == 2 * (wg.A(1)*q1 + wg.A(2)*q2);
 		];
 
@@ -314,14 +315,21 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		% 2.2.2. Closed shear flows at cut (correction).
 		%
 		% We compute them by using the compatibility of twist rate.
+		%
+		% The closed shear flows in the two cells are coupled with the
+		% twist rate of the profile through three equations:
+		% - twist rate equilibrium in each cell,
+		% - torsion moment equilibrium of the profile.
 
 		% Define symbolic variables.
 		tr = sym('tr');  % Twist rate [rad/s].
 		q1 = sym('q1');  % Closed shear flow in cell 1 [N/m].
 		q2 = sym('q2');  % Closed shear flow in cell 2 [N/m].
 
-		% Define system of equations.  % FIX: not correct.
-		r = @(x, z) (vecnorm([x(2:end); z(2:end)]) - vecnorm([x(1:end-1); z(1:end-1)]))/2;
+		% Average distance between two succesive stringers.  % PERF: slow.
+		d = @(x, z) (vecnorm([x(2:end); z(2:end)]) - vecnorm([x(1:end-1); z(1:end-1)]))/2;
+
+		% Define system of equations.
 		eqns = [ ...
 			tr == 1/(2*wg.A(1)*mu) * ( ...
 				wg.L(3)*q1 + wg.L(6)*(q1-q2) ...
@@ -330,13 +338,13 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 				(wg.L(2)+wg.L(4))*q2 + wg.L(6)*(q2-q1) + wg.L(7)*q2 ...
 				+ sum(qo_P2) * wg.L(2)/(ns.P2-1) - sum(qo_P4) * wg.L(4)/(ns.P4-1) + qo_P6 * wg.L(6) - qo_P7 * wg.L(7)), ...
 			wl.My == ...
-				  sum(r(x_P2, z_P2).*qo_P2) * wg.L(2)/(ns.P2-1) ...
-				+ sum(r(x_P3, z_P3).*qo_P3) * wg.L(3)/(ns.P3-1) ...
-				- sum(r(x_P4, z_P4).*qo_P4) * wg.L(4)/(ns.P4-1) ...
-				+ qo_P6 * wg.Ah(6) ...
-				- qo_P7 * wg.Ah(7) ...
-				+ (wg.Ah(3) - wg.Ah(6)) * q1 ...
-				+ (wg.Ah(2) + wg.Ah(6) - wg.Ah(4) - wg.Ah(7)) * q2 ...
+				  sum(d(x_P2, z_P2).*qo_P2) * wg.L(2)/(ns.P2-1) ...
+				+ sum(d(x_P3, z_P3).*qo_P3) * wg.L(3)/(ns.P3-1) ...
+				- sum(d(x_P4, z_P4).*qo_P4) * wg.L(4)/(ns.P4-1) ...
+				+ 2 * qo_P6 * wg.Ah(6) ...
+				- 2 * qo_P7 * wg.Ah(7) ...
+				+ 2 * (wg.Ah(3) - wg.Ah(6)) * q1 ...
+				+ 2 * (wg.Ah(2) + wg.Ah(6) - wg.Ah(4) - wg.Ah(7)) * q2 ...
 		];
 
 		% Solve the system.
@@ -349,11 +357,11 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		% 2.3. Total shear flow and miminum skin thickness.
 
 		% Total shear flows [N/m].
-		q_P2 = q_My(2) + qo_P2 + qc(2);
-		q_P3 = q_My(1) + qo_P3 + qc(1);
-		q_P4 = q_My(2) + qo_P4 + qc(2);
-		q_P6 = q_My(1) - q_My(2) + qo_P6 + qc(1) - qc(2);
-		q_P7 = q_My(2) + qo_P7 + qc(2);
+		q_P2 = q_My(2)           + qo_P2 + qc(2);
+		q_P3 = q_My(1)           + qo_P3 + qc(1);
+		q_P4 = q_My(2)           - qo_P4 + qc(2);
+		q_P6 = q_My(1) - q_My(2) - qo_P6 + qc(1) - qc(2);
+		q_P7 = q_My(2)           - qo_P7 + qc(2);
 
 		% Gather them in one vector.
 		q_tot = [q_P2, q_P3, q_P4, q_P6, q_P7];
