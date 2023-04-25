@@ -1,11 +1,9 @@
 % TODO:
-% - effect of taper in not properly taken into account.
+% - take the wing taper into account.
 % - The data organisation is messy.
 % - Some values are guessed. Wait for more precise values.
 % - Lots of hardcoded values.
-% - perf: swept_area is way too slow.
 % - We neglected the air induction system.
-% - take the wing taper into account.
 % - the pc structure is not very clean. Fins a way to properly extract x
 %   and z from s, without explicitely define their expressions.
 % - implement 'w' optional argument.
@@ -253,6 +251,11 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		% We compute them by using the compatibility of twist rate.
 		% Structures>lesson 5>slides 18 to 25.
 
+		% The torsion shear flows in the two cells are coupled with the
+		% twist rate of the profile through three equations:
+		% - twist rate equilibrium in each cell,
+		% - torsion moment equilibrium of the profile.
+
 		% Define symbolic variables.
 		tr = sym('tr');  % Twist rate [rad/s].
 		q1 = sym('q1');  % Shear flow in cell 1 [N/m].
@@ -274,45 +277,58 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 
 		% 2.2. Shear flow induced by shear loads [N/m].
 		%
-		% Structures>lesson 5>slides 26 to 39.
+		% Structures>lesson 5>slides 26 to 52.
 
-		% 2.2.1. Open shear flows.
+		% 2.2.1. Taper and sweep effect.
+		% Structures>lesson 5>slide 40.
+
+		% x and z derivatives of the stringers along y.
+		[dxdy, dzdy] = derive_stringers(x_af, z_af);
+
+		% Web shear loads.
+		% This gives the "corrected" shear loads exerting on a web
+		% subtended by the stringers of indexes i_af and i_af-1, in the
+		% index datum of the airfoil.
+		Tx_w = @(i_af) wl.Tx - B_sigma_yy(i_af)*dxdy(i_af) - B_sigma_yy(i_af-1)*dxdy(i_af-1);
+		Tz_w = @(i_af) wl.Tz - B_sigma_yy(i_af)*dzdy(i_af) - B_sigma_yy(i_af-1)*dzdy(i_af-1);
+
+		% 2.2.2. Open shear flows.
 		%
 		% We cut the cells at the top left of each spar booms.
 
 		% Incremental shear flow in skins.
-		qo = @(x, z) ...
-			- (Izz2B*wl.Tz-Ixz2B*wl.Tx)/(Ixx2B*Izz2B-Ixz2B^2) * z ...
-			- (Ixx2B*wl.Tx-Ixz2B*wl.Tz)/(Ixx2B*Izz2B-Ixz2B^2) * x;
+		qo = @(i_af) ...
+			- (Izz2B*Tz_w(i_af)-Ixz2B*Tx_w(i_af))/(Ixx2B*Izz2B-Ixz2B^2) * z_af(i_af) ...
+			- (Ixx2B*Tx_w(i_af)-Ixz2B*Tz_w(i_af))/(Ixx2B*Izz2B-Ixz2B^2) * x_af(i_af);
 
 		% Open shear flow in panel 3.
 		qo_P3 = zeros(1, ns.P3-1);
 		qo_P3(1) = 0;  % Because of the cut at this place.
 		for i = 2:ns.P3-1
-			qo_P3(i) = qo_P3(i-1) + qo(x_P3(i), z_P3(i));
+			qo_P3(i) = qo_P3(i-1) + qo(ns.P2 + i);
 		end
 
 		% Open shear flow in panel 2.
 		qo_P2 = zeros(1, ns.P2-1);
 		qo_P2(1) = 0;  % Because of the cut at this place.
 		for i = 2:ns.P2-1
-			qo_P2(i) = qo_P2(i-1) + qo(x_P2(i), z_P2(i));
+			qo_P2(i) = qo_P2(i-1) + qo(i);
 		end
 
 		% Open shear flow in panel 6.
-		qo_P6 = qo_P2(end) + 2 * qo(x_P2(end), z_P2(end));  % Continues from panel 2.
+		qo_P6 = qo_P2(end) + 2 * qo(ns.P2);  % Continues from panel 2.
 
 		% Open shear flow in panel 4.
 		qo_P4 = zeros(1, ns.P4-1);
 		qo_P4(1) = qo_P3(end) + qo_P6;  % Like Kirchoff first law.
 		for i = 2:ns.P4-1
-			qo_P4(i) = qo_P4(i-1) + qo(x_P4(i), z_P4(i));
+			qo_P4(i) = qo_P4(i-1) + qo(ns.P2 + ns.P3 + i);
 		end
 
 		% Open shear flow in panel 7.
-		qo_P7 = qo_P4(end) + qo(x_P4(end), z_P4(end));  % Continues from panel 4.
+		qo_P7 = qo_P4(end) + qo(ns.wing);  % Continues from panel 4.
 
-		% 2.2.2. Closed shear flows at cut (correction).
+		% 2.2.3. Closed shear flows at cut (correction).
 		%
 		% We compute them by using the compatibility of twist rate.
 		%
@@ -345,6 +361,8 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 				- 2 * qo_P7 * wg.Ah(7) ...
 				+ 2 * (wg.Ah(3) - wg.Ah(6)) * q1 ...
 				+ 2 * (wg.Ah(2) + wg.Ah(6) - wg.Ah(4) - wg.Ah(7)) * q2 ...
+				+ sum(x_af .* B_sigma_yy .* dzdy) ...
+				- sum(z_af .* B_sigma_yy .* dxdy) ...
 		];
 
 		% Solve the system.
@@ -371,6 +389,31 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 
 		% Return the computed stresses and designs.
 		stresses = table(wl.y, wl.n, wl.EAS, B_sigma_yy, B_min, q_tot, t_min);
+	end
+
+	function [dxdy, dzdy] = derive_stringers(x_cs, z_cs)
+		% DERIVE_STRINGERS  Spanwise x and z derivatives of the stringers.
+
+		% Length of the spars [m].
+		L = (D.Wing.span/2 - wl.y) / cosd(D.Wing.sweep);
+
+		% X-translation of the profile, due to sweep [m].
+		tr = (D.Wing.span/2 - wl.y) * tand(D.Wing.sweep);
+
+		% Scaling of the profile, due to taper.
+		sc = D.Wing.taper;
+
+		% Apply affine transformation: scaling and translation.
+		% x_tip = x_cs .* sc + tr;  % TODO: not sure if we should take sweep into account.
+		x_tip = x_cs .* sc;
+		z_tip = z_cs .* sc;
+
+		% Debug print: uncomment to see tip airfoil profile.
+		% hold on; plot(x_tip, z_tip, 'Marker','+'); hold off;
+
+		% Get the spanwise derivatives.
+		dxdy = (x_tip - x_cs) ./ L;
+		dzdy = (z_tip - z_cs) ./ L;
 	end
 
 	function WingGeo = wing_geometry

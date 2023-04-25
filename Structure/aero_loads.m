@@ -38,8 +38,6 @@ addpath(genpath(fullfile(file_dir, "../Utils")));
 % Function global variables.
 h = D.FE.altitude;             % Atitude at which the CP are computed [m].
 [rho, ~, ~, ~] = ISA(h);       % Air properties at desired altitude.
-% TEST: take rho at seal level.
-% rho = C.rho_sl;
 TAS2EAS = sqrt(rho/C.rho_sl);  % Conversion from true airspeed to equivalent airspeed.
 CP = D.FE.CP;                  % Extract the CP table, just for conciseness.
 

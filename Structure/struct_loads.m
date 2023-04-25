@@ -218,7 +218,6 @@ end
 		y_fuel = D.Comp{"Fuel Wing", "COG"}(2);
 
 		% Compute the relevant MNT loads.
-		% FIX: take into account the wing pitching moment.
 		% FIX: choose reference origin from which to compute the moments.
 		Tx = ( al.n*(W_wing + W_fuel) + L) * sind(aoi) + al.D_wing * cosd(aoi);
 		Tz = ( al.n*(W_wing + W_fuel) + L) * cosd(aoi) + al.D_wing * sind(aoi);
