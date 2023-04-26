@@ -1,4 +1,5 @@
 % TODO:
+% - Should take to wing pitching moment, which is funciton of the aoa.
 % - Check aoi of the HT tail, it's probably different that for the wing.
 % - D.Propu.T_sls should not be used for every CP.
 % - Rework distances naming convention.
@@ -105,8 +106,8 @@ save(fullfile(file_dir, "../data.mat"), "AeroLoads", "-append");
 
 		% Pitching moment [N*m].
 		% Only take into account the wing pitching moment.
-		cm = D.Wing.airfoil.cm;
-		M_wing  = 0.5 * rho * TAS^2 * D.Wing.surf * D.Wing.smc * cm;
+		M_wing  = 0.5 * rho * TAS^2 * D.Wing.surf * D.Wing.smc * D.Wing.airfoil.cm;
+		% M_wing  = @(aoa) 0.5 * rho * TAS^2 * D.Wing.surf * D.Wing.smc * D.Wing.CM(aoa);
 
 		% Plane inertia along Y-axis [kg*m²].
 		I_theta = sum(D.Comp.Mass .* vecnorm(D.Comp.COG - D.Plane.COG, 2, 2).^2);

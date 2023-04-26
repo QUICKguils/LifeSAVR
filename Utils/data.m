@@ -52,6 +52,7 @@ Wing.V_s_landing          = 40.3656;  % Stall velocity in landing configuration 
 Wing.V_s_landing_mtow     = 56.0196;  % Stall velocity in landing configuration (MTOW) [m/s].
 Wing.delta_cl_max_takeoff = 0.5237;   % Delta max lift coeff at takeoff.
 Wing.delta_cl_max_landing = 0.6531;   % Delta max lift coeff at landing.
+Wing.CM                   = @(aoa) -7.552 * deg2rad(aoa) -0.3079;  % Pitching moment [-].
 
 % Airfoil profile.
 Wing.airfoil.name         = "NASA SC(2)-0412";
