@@ -68,10 +68,13 @@ FusStresses = table(...
 	zeros(5, 1), zeros(5, 1), zeros(5, 1), zeros(5, ns.fus), zeros(5, 1), zeros(5, ns.fus), zeros(5, 1), ...
 	'VariableNames', {'x', 'n', 'EAS', 'B_sigma_xx', 'B_min', 'q', 't_min'});
 
+% Get the fuselage geometry parameters.
+FusGeo = fus_geometry;  % TODO: should technically loop for all cs.
+
 % Compute stresses for all the cs and CP.
 for row = 1:height(D.FusLoads)
 	fl = D.FusLoads(row, :);
-	FusStresses(row, :) = fuselage_stresses(fl);
+	FusStresses(row, :) = fuselage_stresses(FusGeo, fl);
 end
 
 % Relevant fuselage design data.
@@ -111,37 +114,19 @@ WingDesign.MinSkinThickness = max(WingStresses.t_min);
 % Save relevant data structures in data.mat.
 save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign', "-append");
 
+% 4. Plot and save data.
+
+if contains(opts, 'p')
+	plot_write(FusGeo, WingGeo);
+end
+
 %% Fuselage
 
-	function stresses = fuselage_stresses(fl)
+	function stresses = fuselage_stresses(fg, fl)
 		% FUSELAGE_STRESSES  Stresses in the fuselage.
 		%
 		% This function implements the methodology and formulae that can be
 		% found at: Structures>lessson 6>slides 41 to 63.
-
-		% 0. Design data and preliminary computations.
-
-		% We choose an constant angular distribution of the booms.
-		% It gives a slightly denser distribution at the top and at the
-		% bottom. This is rather good: the moment of area is the weakest
-		% in the vertical axis, while the bending moment is the largest
-		% -> good to reinforce these locations.
-		theta = 0 : 2*pi/ns.fus : 2*pi*(ns.fus-1)/ns.fus;
-
-		% Fuselage elliptic cross section.
-		a  = D.Fus.a;  % Fuselage semi major axis, in Y-direction [m].
-		b  = D.Fus.b;  % Fuselage semi minor axis, in Z-direction [m].
-
-		% Distances between the stringers and the ellipse center [m].
-		r = a*b ./ sqrt((b.*cos(theta)).^2 + (a.*sin(theta)).^2);
-		% YZ coordinates of the stringers [m].
-		y = r.*cos(theta);
-		z = r.*sin(theta);
-
-		% Moment of area per unit boom area [m²].
-		% Note that product moment of area Iyz is null, by symmetry.
-		Iyy2B = sum(z.^2);
-		Izz2B = sum(y.^2);
 
 		% 1. Axial stress sigma_xx [Pa] and boom area B [m²].
 		%
@@ -154,7 +139,7 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 
 		% Normal load induced by bending moments [N].
 		% Obtained thanks to the Navier bending equation.
-		B_sigma_xx = fl.My.*z./Iyy2B - fl.Mz.*y./Izz2B;
+		B_sigma_xx = fl.My.*fg.z./fg.I.yy2B - fl.Mz.*fg.y./fg.I.zz2B;
 
 		% Minimum area of the stringers [m²].
 		B_min = max(abs(B_sigma_xx)) / sigma_max;
@@ -171,19 +156,19 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		% Shear flow induced by shear loads [N/m].
 		%
 		% Preallocation.
-		q_Ty = zeros(size(y));
-		q_Tz = zeros(size(z));
+		q_Ty = zeros(size(fg.y));
+		q_Tz = zeros(size(fg.z));
 		% First value.  TODO: these formulae are not correct.
-		q_Ty(1) = -0.5 * fl.Ty/Izz2B * y(1);
-		q_Tz(1) = -0.5 * fl.Tz/Iyy2B * z(1);
+		q_Ty(1) = -0.5 * fl.Ty/fg.I.zz2B * fg.y(1);
+		q_Tz(1) = -0.5 * fl.Tz/fg.I.yy2B * fg.z(1);
 		% Iteratively compute q along the fuselage perimeter.
 		for i = 2:ns.fus
-			q_Ty(i) = q_Ty(i-1) - fl.Ty/Izz2B * y(i);
-			q_Tz(i) = q_Tz(i-1) - fl.Tz/Iyy2B * z(i);
+			q_Ty(i) = q_Ty(i-1) - fl.Ty/fg.I.zz2B * fg.y(i);
+			q_Tz(i) = q_Tz(i-1) - fl.Tz/fg.I.yy2B * fg.z(i);
 		end
 
 		% Shear flow induced by torsion moment [N/m].
-		q_Mx = fl.Mx / (2 * pi*a*b);
+		q_Mx = fl.Mx / (2 * fg.A);
 
 		% Total shear flow [N/m].
 		q_tot = q_Ty + q_Tz + q_Mx;
@@ -193,6 +178,45 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 
 		% Return the computed stresses and designs.
 		stresses = table(fl.x, fl.n, fl.EAS, B_sigma_xx, B_min, q_tot, t_min);
+	end
+
+	function FusGeo = fus_geometry
+		% FUS_GEOMETRY  Build fuselage geometry elements.
+
+		% We choose an constant angular distribution of the booms.
+		% It gives a slightly denser distribution at the top and at the
+		% bottom. This is rather good: the moment of area is the weakest
+		% in the vertical axis, while the bending moment is the largest
+		% -> good to reinforce these locations.
+		theta = 0 : 2*pi/ns.fus : 2*pi*(ns.fus-1)/ns.fus;
+
+		% Fuselage elliptic cross section.
+		a  = D.Fus.a;  % Fuselage semi major axis, in Y-direction [m].
+		b  = D.Fus.b;  % Fuselage semi minor axis, in Z-direction [m].
+
+		% Distances between the stringers and the ellipse center [m].
+		r = @(theta) a*b ./ sqrt((b.*cos(theta)).^2 + (a.*sin(theta)).^2);
+		% Radial distances of the stringers [m].
+		r_stringers = r(theta);
+		% YZ coordinates of the stringers [m].
+		y = r_stringers.*cos(theta);
+		z = r_stringers.*sin(theta);
+
+		% Moment of area per unit boom area [m²].
+		% Note that product moment of area Iyz is null, by symmetry.
+		I.yy2B = sum(z.^2);
+		I.zz2B = sum(y.^2);
+
+		% Build return data structure.
+		FusGeo.a    = a;
+		FusGeo.b    = b;
+		FusGeo.r    = r;
+		FusGeo.y    = y;
+		FusGeo.z    = z;
+		FusGeo.I    = I;
+		FusGeo.A    = pi*a*b;
+		FusGeo.CG.x = 0;
+		FusGeo.CG.z = 0;
 	end
 
 %% Wing
@@ -391,31 +415,6 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		stresses = table(wl.y, wl.n, wl.EAS, B_sigma_yy, B_min, q_tot, t_min);
 	end
 
-	function [dxdy, dzdy] = derive_stringers(x_cs, z_cs)
-		% DERIVE_STRINGERS  Spanwise x and z derivatives of the stringers.
-
-		% Length of the spars [m].
-		L = (D.Wing.span/2 - wl.y) / cosd(D.Wing.sweep);
-
-		% X-translation of the profile, due to sweep [m].
-		tr = (D.Wing.span/2 - wl.y) * tand(D.Wing.sweep);
-
-		% Scaling of the profile, due to taper.
-		sc = D.Wing.taper;
-
-		% Apply affine transformation: scaling and translation.
-		% x_tip = x_cs .* sc + tr;  % TODO: not sure if we should take sweep into account.
-		x_tip = x_cs .* sc;
-		z_tip = z_cs .* sc;
-
-		% Debug print: uncomment to see tip airfoil profile.
-		% hold on; plot(x_tip, z_tip, 'Marker','+'); hold off;
-
-		% Get the spanwise derivatives.
-		dxdy = (x_tip - x_cs) ./ L;
-		dzdy = (z_tip - z_cs) ./ L;
-	end
-
 	function WingGeo = wing_geometry
 		% WING_GEOMETRY  Build wing geometry elements.
 
@@ -514,11 +513,8 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		WingGeo.I    = I;
 		WingGeo.CG.x = x_CG;
 		WingGeo.CG.z = z_CG;
-
-		% Plot the wing profile, if desired.
-		if contains(opts, 'p')
-			plot_wing(WingGeo);
-		end
+		WingGeo.x_af = x_af;
+		WingGeo.z_af = z_af;
 	end
 
 	function pc = new_pc(Xs, Zs)
@@ -603,8 +599,33 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		area = abs(area);
 	end
 
-	function plot_wing(wg)
-		% PLOT_WING  Plot the wing's geometry elements of the profile.
+	function [dxdy, dzdy] = derive_stringers(x_cs, z_cs)
+		% DERIVE_STRINGERS  Spanwise x and z derivatives of the stringers.
+
+		% Length of the spars [m].
+		L = (D.Wing.span/2 - wl.y) / cosd(D.Wing.sweep);
+
+		% X-translation of the profile, due to sweep [m].
+		% tr = (D.Wing.span/2 - wl.y) * tand(D.Wing.sweep);
+
+		% Scaling of the profile, due to taper.
+		sc = D.Wing.taper;
+
+		% Apply affine transformation: scaling and translation.
+		% x_tip = x_cs .* sc + tr;  % TODO: not sure if we should take sweep into account.
+		x_tip = x_cs .* sc;
+		z_tip = z_cs .* sc;
+
+		% Debug print: uncomment to see tip airfoil profile.
+		% hold on; plot(x_tip, z_tip, 'Marker','+'); hold off;
+
+		% Get the spanwise derivatives.
+		dxdy = (x_tip - x_cs) ./ L;
+		dzdy = (z_tip - z_cs) ./ L;
+	end
+
+	function plot_write(fg, wg)
+		% PLOT_WRITE  Plot the wing's geometry elements of the profile.
 
 		% Instantiate a figure object.
 		figure('WindowStyle','docked');
@@ -626,5 +647,27 @@ save(fullfile(file_dir, "../data.mat"), "WingGeo", "WingStresses", 'WingDesign',
 		grid;
 		axis equal;
 		hold off;
+
+
+		% Write plotting data in external file, if desired.
+		if contains(opts, 'w')
+			write_ext();
+		end
+
+		function write_ext()
+			% WRITE_EXT	 Write plotting data in external file.
+
+			% Generate the filename of the object to save.
+			gen_fname = @(obj) fullfile(file_dir, strcat("../Plot/", obj, ".dat"));
+
+			% Fuselage contour.
+			writematrix([linspace(0, 2*pi, 100)', arrayfun(fg.r, linspace(0, 2*pi, 100))'], gen_fname("FusContour"));
+			% Fuselage stringers.
+			writematrix([fg.y', fg.z'], gen_fname("FusStringers"));
+			% Wing contour.
+			writematrix([wg.x_af, wg.z_af], gen_fname("WingContour"));
+			% Wing stringers.
+			writematrix([wg.S.AF.x', wg.S.AF.z'], gen_fname("WingStringers"));
+		end
 	end
 end
