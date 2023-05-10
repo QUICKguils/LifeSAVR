@@ -137,50 +137,50 @@ VT.airfoil.name  = "SC 0010";  % Airfoil name.
 % TODO: mass of the fuselage not taken into account.
 Comp = table();
 %                                                             COG [m]
-%                 Name                    Mass [lb]      X       Y       Z
-%    -----------------------------        ---------   -------|-------|------- 
-Comp("Fuselage",                    :) = {1233.8,    [3.693,  0.0000, 0.0000]};
-Comp("Main landing gear",           :) = {385.4248,  [4.59,   0.0000, 0.0000]};
-Comp("Nose landing gear",           :) = {81.1975,   [1.5,    0.0000, 0.0000]};
-Comp("Engine mount",                :) = {6.7189,    [7.03,   0.0000, 0.0000]};
-Comp("Engine section",              :) = {4.782,     [7.23,   0.0000, 0.0000]};
-Comp("Air induction system",        :) = {225.71,    [4.9830, 0.0000, 0.4022]};
-Comp("Tail pipe",                   :) = {0,         [7.75,   0.0000, 0.0000]};
-Comp("Starter",                     :) = {12.65,     [6.26,   0.0000, 0.0000]};
-Comp("Fuel system and empty tanks", :) = {11.087,    [3.6028, 0.0000, 0.0000]};
-Comp("Instruments",                 :) = {83.49,     [6.5,    0.0000, 0.0000]};
-Comp("Hydraulics",                  :) = {171.7485,  [6,      0.0000, 0.0000]};
-Comp("Furnishings",                 :) = {108.8,     [2,      0.0000, 0.0000]};
-Comp("Handling gear",               :) = {0,         [1.5,    0.0000, 0.0000]};
-Comp("Vertical tail",               :) = {84.6574,   [7.5774, 0.0000, 1.0304]};
-Comp("Horizontal tail",             :) = {37.4785,   [7.7779, 0.0000, 0.0000]};
-Comp("Wings",                       :) = {494.0535,  [4.1848, 1.9665, 0.0000]};
-Comp("Fuel Wing",                   :) = {834.1445,  [4.1848, 0.9832, 0.0000]};
-Comp("Fuel fuselage",               :) = {3678.712,  [3.5678, 0.0000, 0.0000]};
-Comp("Payload",                     :) = {300,       [3.4,    0.0000, 0.0000]};
-Comp("Engine",                      :) = {670.21,    [7.13,   0.0000, 0.0000]};
-Comp("Flight control unit",         :) = {20,        [1.8,    0.0000, 0.0000]};
-Comp("System control unit",         :) = {18,        [1.8,    0.0000, 0.0000]};
-Comp("Flight transduces",           :) = {3,         [4.4202, 0.0000, 0.0000]};
-Comp("Power engine control unit",   :) = {7,         [7.13,   0.0000, 0.0000]};
-Comp("Power converter assembly",    :) = {4,         [7.13,   0.0000, 0.0000]};
-Comp("GPS receiver (anti-jam)",     :) = {25,        [1.5,    0.0000, 0.0000]};
-Comp("GPS antenna",                 :) = {6,         [1.5,    0.0000, 0.0000]};
-Comp("Battery (non-propulsion)",    :) = {13,        [1.5,    0.0000, 0.0000]};
-Comp("Cooling and pressurization",  :) = {5,         [1.9,    0.0000, 0.0000]};
-Comp("Air data probe",              :) = {1,         [4.47,   0.0000, 0.0000]};
-Comp("Anti-ice",                    :) = {2,         [1,      0.0000, 0.0000]};
-Comp("Thermal management",          :) = {23,        [1,      0.0000, 0.0000]};
-Comp("Miscelectrical wiring",       :) = {5,         [1.5,    0.0000, 0.0000]};
-Comp("Basic satellite radio",       :) = {34,        [1.7,    0.0000, 0.0000]};
-Comp("Data handling and linking",   :) = {24,        [1.7,    0.0000, 0.0000]};
-Comp("Flight termination system",   :) = {10,        [1.5,    0.0000, 0.0000]};
-Comp("Navigation fusion processor", :) = {9,         [1.5,    0.0000, 0.0000]};
-Comp("Transponders",                :) = {15,        [1.8,    0.0000, 0.0000]};
-Comp("Radar",                       :) = {59.7,      [0.5,    0.0000, 0.0000]};
-Comp("Nose EO/IR/LIDAR",            :) = {100,       [1.85,   0.0000, 0.0000]};
-Comp("Aft EO/IR/LIDAR",             :) = {35,        [6.5,    0.0000, 0.0000]};
-Comp("Sensor growth",               :) = {15,        [1.5,    0.0000, 0.0000]};
+%                 Name                    Mass [lb]     X      Y       Z
+%    -----------------------------        ---------  ------|-------|-------
+Comp("Fuselage",                    :) = {1233.8,   [3.6,    0.0000, 0      ]};
+Comp("Main landing gear",           :) = {381.7,    [4.7413, 0.0000, -0.2725]};
+Comp("Nose landing gear",           :) = {80.3,     [1,      0.0000, -0.2075]};
+Comp("Engine mount",                :) = {6.7189,   [7.03,   0.0000, 0      ]};
+Comp("Engine section",              :) = {4.782,    [7.23,   0.0000, 0      ]};
+Comp("Air induction system",        :) = {319.68,   [4.3,    0.0000, 0.4836 ]};
+Comp("Tail pipe",                   :) = {0,        [7.75,   0.0000, 0      ]};
+Comp("Starter",                     :) = {12.65,    [6.26,   0.0000, 0      ]};
+Comp("Fuel system and empty tanks", :) = {11.087,   [3.6028, 0.0000, 0      ]};
+Comp("Instruments",                 :) = {83.49,    [1.2,    0.0000, 0      ]};
+Comp("Hydraulics",                  :) = {171.7485, [3.5,    0.0000, 0      ]};
+Comp("Furnishings",                 :) = {108.8,    [1.5,    0.0000, 0      ]};
+Comp("Handling gear",               :) = {0,        [1.5,    0.0000, 0      ]};
+Comp("Vertical tail",               :) = {84.6574,  [7.593,  0.0000, 1.0180 ]};
+Comp("Horizontal tail",             :) = {37.4785,  [7.777,  0.0000, 0      ]};
+Comp("Wings",                       :) = {494.0535, [4.184,  1.9665, 0      ]};
+Comp("Fuel Wing",                   :) = {834.1445, [4.184,  0.9832, 0.3039 ]};
+Comp("Fuel fuselage",               :) = {3497.933, [3.567,  0.0000, 0.0625 ]};
+Comp("Payload",                     :) = {300,      [3.4,    0.0000, -0.35  ]};
+Comp("Engine",                      :) = {670.21,   [7,      0.0000, 0      ]};
+Comp("Flight control unit",         :) = {20,       [1.7,    0.0000, 0      ]};
+Comp("System control unit",         :) = {18,       [1.7,    0.0000, 0      ]};
+Comp("Flight transduces",           :) = {3,        [4.4202, 0.0000, 0      ]};
+Comp("Power engine control unit",   :) = {7,        [7.13,   0.0000, 0      ]};
+Comp("Power converter assembly",    :) = {4,        [7.13,   0.0000, 0      ]};
+Comp("GPS receiver (anti-jam)",     :) = {25,       [1.2,    0.0000, 0      ]};
+Comp("GPS antenna",                 :) = {6,        [1.2,    0.0000, 0      ]};
+Comp("Battery (non-propulsion)",    :) = {13,       [1.2,    0.0000, 0      ]};
+Comp("Cooling and pressurization",  :) = {5,        [1.9,    0.0000, 0      ]};
+Comp("Air data probe",              :) = {1,        [-0.05,  0.0000, 0      ]};
+Comp("Anti-ice",                    :) = {2,        [1,      0.0000, 0      ]};
+Comp("Thermal management",          :) = {23,       [0.75,   0.0000, 0      ]};
+Comp("Miscelectrical wiring",       :) = {5,        [1,      0.0000, 0      ]};
+Comp("Basic satellite radio",       :) = {34,       [1.1,    0.0000, 0      ]};
+Comp("Data handling and linking",   :) = {24,       [1.1,    0.0000, 0      ]};
+Comp("Flight termination system",   :) = {10,       [1,      0.0000, 0      ]};
+Comp("Navigation fusion processor", :) = {9,        [1,      0.0000, 0      ]};
+Comp("Transponders",                :) = {15,       [1,      0.0000, 0      ]};
+Comp("Radar",                       :) = {59.7,     [0.5,    0.0000, 0      ]};
+Comp("Nose EO/IR/LIDAR",            :) = {100,      [1.85,   0.0000, -0.3931]};
+Comp("Aft EO/IR/LIDAR",             :) = {35,       [6.5,    0.0000, -0.5482]};
+Comp("Sensor growth",               :) = {15,       [1.5,    0.0000, 0      ]};
 Comp.Properties.VariableNames = {'Mass', 'COG'};
 
 % Convert weights from lb to kg.
@@ -190,9 +190,9 @@ Comp.Mass = Comp.Mass .* C.lb2kg;
 
 Plane.MTOW      = sum(Comp.Mass);                           % MTOW [kg].
 Plane.COG       = sum(Comp.Mass .* Comp.COG) / Plane.MTOW;  % COG [m].
-Plane.CD_0      = 0.017;                                    % Zero lift drag coefficient.
-Plane.CD_cr     = 0.0232;                                   % Drag in cruise conditions.
-Plane.CD_loiter = 0.0291;                                   % Drag in loiter conditions.
+Plane.CD_0      = 0.0288;                                   % Zero lift drag coefficient.
+Plane.CD_cr     = 0.0245;                                   % Drag in cruise conditions.
+Plane.CD_loiter = 0.0294;                                   % Drag in loiter conditions.
 
 %% Fuselage
 %
