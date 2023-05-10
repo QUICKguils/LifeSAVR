@@ -205,6 +205,10 @@ end
 		
 		% Lift of one wing [N].
 		L = 0.5 * al.L;
+		% Drag of one wing [N].
+		D_wing = 0.5 * al.D_wing;
+		% Pitching moment of one wing [N*m].
+		M_wing = 0.5 * al.M_wing;
 		% Weight of one wing [N].
 		W_wing = - 0.5 * D.Wing.mass * C.g;
 		% Weight of the fuel stored in one wing [N].
@@ -217,13 +221,30 @@ end
 		x_fuel = D.Comp{"Fuel Wing", "COG"}(1);
 		y_fuel = D.Comp{"Fuel Wing", "COG"}(2);
 
+		% The wing lift is assumed to be distributed as a trapezoïdal linear load.
+		%
+		% Aliases.
+		y_r = y_cs;
+		y_t = D.Wing.span/2;
+		c_r = D.Wing.c_root;
+		c_t = D.Wing.c_tip;
+		% Y-coord of the wing lift application point.
+		y_lift = D.Wing.airfoil.cl_alpha / (D.Wing.CL_alpha * D.Wing.surf) * (...
+			(c_r - (c_t-c_r)/(y_t-y_r)*y_r) * (y_t^2-y_r^2)/2 ...
+			     + (c_t-c_r)/(y_t-y_r)      * (y_t^3-y_r^3)/3);
+
+		% Lever arms.
+		dy_wing = y_wing - y_cs;
+		dy_fuel = y_fuel - y_cs;
+		dy_lift = y_lift - y_cs;
+
 		% Compute the relevant MNT loads.
 		% FIX: choose reference origin from which to compute the moments.
-		Tx = ( al.n*(W_wing + W_fuel) + L) * sind(aoi) + al.D_wing * cosd(aoi);
-		Tz = ( al.n*(W_wing + W_fuel) + L) * cosd(aoi) + al.D_wing * sind(aoi);
-		Mx = (-al.n*(W_wing*y_wing + W_fuel*y_fuel) - L*y_wing) * cosd(aoi);
-		Mz = (-al.n*(W_wing*y_wing + W_fuel*y_fuel) - L*y_wing) * sind(aoi);
-		My = (-al.n*(W_fuel*(x_fuel-x_wing))) * cosd(aoi) + al.M_wing;
+		Tx = ( al.n*(W_wing + W_fuel) + L) * sind(aoi) + D_wing * cosd(aoi);
+		Tz = ( al.n*(W_wing + W_fuel) + L) * cosd(aoi) + D_wing * sind(aoi);
+		Mx = (-al.n*(W_wing*dy_wing + W_fuel*dy_fuel) - L*dy_lift) * cosd(aoi);
+		Mz = (-al.n*(W_wing*dy_wing + W_fuel*dy_fuel) - L*dy_wing) * sind(aoi);
+		My = (-al.n*(W_fuel*(x_fuel-x_wing))) * cosd(aoi) - M_wing;
 
 		% Return the computed loads.
 		loads = table(y, al.n, al.EAS, Tx, Tz, Mx, My, Mz);
