@@ -1,7 +1,7 @@
 % TODO:
-% - Should take to wing pitching moment, which is funciton of the aoa.
+% - Should take the wing pitching moment, which is function of the aoa.
 % - Check aoi of the HT tail, it's probably different that for the wing.
-% - D.Propu.T_sls should not be used for every CP.
+% - D.Propu.Engine.Thrust should not be used for every CP.
 % - Rework distances naming convention.
 % - Try to define syms variables in the main function scope, for speed.
 % - Implement vpasolve more idiomatically. Maybe rotation matrix for distances.
@@ -88,7 +88,7 @@ save(fullfile(file_dir, "../data.mat"), "AeroLoads", "-append");
 		TAS = cp.EAS / TAS2EAS;
 
 		% Thrust [N].
-		T = D.Propu.T_sls * thrust_SLSconv(TAS, h, D.Propu.engine.BPR, D.Propu.engine.G);
+		T = D.Propu.engine.Thrust * thrust_SLSconv(TAS, h, D.Propu.engine.BPR, D.Propu.engine.G);
 
 		% Plane weight [N].
 		W = D.Plane.MTOW * C.g;
@@ -106,7 +106,7 @@ save(fullfile(file_dir, "../data.mat"), "AeroLoads", "-append");
 
 		% Pitching moment [N*m].
 		% Only take into account the wing pitching moment.
-		M_wing  = 0.5 * rho * TAS^2 * D.Wing.surf * D.Wing.smc * D.Wing.airfoil.cm;
+		M_wing  = 0.5 * rho * TAS^2 * D.Wing.smc^2 * D.Wing.airfoil.cm * D.Wing.span;
 		% M_wing  = @(aoa) 0.5 * rho * TAS^2 * D.Wing.surf * D.Wing.smc * D.Wing.CM(aoa);
 
 		% Plane inertia along Y-axis [kg*m²].
@@ -131,7 +131,7 @@ save(fullfile(file_dir, "../data.mat"), "AeroLoads", "-append");
 		dz_b  = sym('dz_b');   % Z-distance from airplaine COG to body COG, absolute axis [m].
 		% Define system of equations.
 		eqns = [ ...
-			L == 0.5 * rho * TAS^2 * D.Wing.surf * D.Wing.CL_alpha * deg2rad(aoa + D.Wing.aoa_zerolift), ...
+			L == 0.5 * rho * TAS^2 * D.Wing.surf * D.Wing.CL_alpha * deg2rad(aoa - D.Wing.aoa_zerolift), ...
 			L + P == cp.n*W - T*sind(aoi), ...
 			I_theta * theta_dd == - L*dx_w + D_wing*dz_w + D_body*dz_b - P*dx_HT - T*dist.E2COG(3) + M_wing, ...
 			dx_w  ==   cosd(aoi) * dist.wing2COG(1) + sind(aoi) * dist.wing2COG(3), ...
