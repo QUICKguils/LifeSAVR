@@ -95,7 +95,7 @@ ns.wing = ns.P2 + ns.P3 + ns.P4;
 % This table contains the relevant stresses and resulting dimensions in
 % the selected wing cross sections, for al the CP.
 WingStresses = table(...
-	zeros(5, 1), zeros(5, 1), zeros(5, 1), zeros(5, ns.wing), zeros(5, 1), zeros(5, ns.wing-1), zeros(5, 1), ...
+	zeros(5, 1), zeros(5, 1), zeros(5, 1), zeros(5, ns.wing), zeros(5, 1), zeros(5, ns.wing), zeros(5, 1), ...
 	'VariableNames', {'y', 'n', 'EAS', 'B_sigma_yy', 'B_min', 'q', 't_min'});
 
 % Get the wing geometry parameters.
@@ -284,20 +284,23 @@ end
 		tr = sym('tr');  % Twist rate [rad/s].
 		q1 = sym('q1');  % Shear flow in cell 1 [N/m].
 		q2 = sym('q2');  % Shear flow in cell 2 [N/m].
+		q3 = sym('q3');  % Shear flow in cell 3 [N/m].
 
 		% Define system of equations.
 		eqns = [ ...
 			tr == 1/(2*wg.A(1)*mu) * (wg.L(3)*q1 + wg.L(6)*(q1-q2)), ...
-			tr == 1/(2*wg.A(2)*mu) * ((wg.L(2)+wg.L(4))*q2 + wg.L(6)*(q2-q1) + wg.L(7)*q2), ...
-			wl.My == 2 * (wg.A(1)*q1 + wg.A(2)*q2);
+			tr == 1/(2*wg.A(2)*mu) * ((wg.L(2)+wg.L(4))*q2 + wg.L(6)*(q2-q1) + wg.L(7)*(q2-q3)), ...
+			tr == 1/(2*wg.A(3)*mu) * ((wg.L(1)+wg.L(5))*q3 + wg.L(7)*(q3-q2)), ...
+			wl.My == - 2 * (wg.A(1)*q1 + wg.A(2)*q2 + wg.A(3)*q3);
 		];
 
 		% Solve the system.
-		res = vpasolve(eqns, [tr, q1, q2]);
+		res = vpasolve(eqns, [tr, q1, q2, q3]);
 
 		% Unpack the results of interest.
-		q_My(1)   = double(res.q1);
-		q_My(2)   = double(res.q2);
+		q_My(1) = double(res.q1);
+		q_My(2) = double(res.q2);
+		q_My(3) = double(res.q3);
 
 		% 2.2. Shear flow induced by shear loads [N/m].
 		%
@@ -311,46 +314,46 @@ end
 
 		% Web shear loads.
 		% This gives the "corrected" shear loads exerting on a web
-		% subtended by the stringers of indexes i_af and i_af-1, in the
+		% subtended by the stringers of indexes i1_af and i2_af, in the
 		% index datum of the airfoil.
-		Tx_w = @(i_af) wl.Tx - B_sigma_yy(i_af)*dxdy(i_af) - B_sigma_yy(i_af-1)*dxdy(i_af-1);
-		Tz_w = @(i_af) wl.Tz - B_sigma_yy(i_af)*dzdy(i_af) - B_sigma_yy(i_af-1)*dzdy(i_af-1);
+		Tx_w = @(i2_af, i1_af) wl.Tx - B_sigma_yy(i2_af)*dxdy(i2_af) - B_sigma_yy(i1_af)*dxdy(i1_af);
+		Tz_w = @(i2_af, i1_af) wl.Tz - B_sigma_yy(i2_af)*dzdy(i2_af) - B_sigma_yy(i1_af)*dzdy(i1_af);
 
 		% 2.2.2. Open shear flows.
 		%
 		% We cut the cells at the top left of each spar booms.
 
 		% Incremental shear flow in skins.
-		qo = @(i_af) ...
-			- (Izz2B*Tz_w(i_af)-Ixz2B*Tx_w(i_af))/(Ixx2B*Izz2B-Ixz2B^2) * z_af(i_af) ...
-			- (Ixx2B*Tx_w(i_af)-Ixz2B*Tz_w(i_af))/(Ixx2B*Izz2B-Ixz2B^2) * x_af(i_af);
+		qo = @(i2_af, i1_af) ...
+			- (Izz2B*Tz_w(i2_af, i1_af)-Ixz2B*Tx_w(i2_af, i1_af))/(Ixx2B*Izz2B-Ixz2B^2) * z_af(i2_af) ...
+			- (Ixx2B*Tx_w(i2_af, i1_af)-Ixz2B*Tz_w(i2_af, i1_af))/(Ixx2B*Izz2B-Ixz2B^2) * x_af(i2_af);
 
 		% Open shear flow in panel 3.
 		qo_P3 = zeros(1, ns.P3-1);
 		qo_P3(1) = 0;  % Because of the cut at this place.
 		for i = 2:ns.P3-1
-			qo_P3(i) = qo_P3(i-1) + qo(ns.P2 + i);
+			qo_P3(i) = qo_P3(i-1) + qo(ns.P2+(i+1), ns.P2+i);
 		end
 
 		% Open shear flow in panel 2.
 		qo_P2 = zeros(1, ns.P2-1);
 		qo_P2(1) = 0;  % Because of the cut at this place.
 		for i = 2:ns.P2-1
-			qo_P2(i) = qo_P2(i-1) + qo(i);
+			qo_P2(i) = qo_P2(i-1) + qo(i+1, i);
 		end
 
 		% Open shear flow in panel 6.
-		qo_P6 = qo_P2(end) + 2 * qo(ns.P2);  % Continues from panel 2.
-
-		% Open shear flow in panel 4.
-		qo_P4 = zeros(1, ns.P4-1);
-		qo_P4(1) = qo_P3(end) + qo_P6;  % Like Kirchoff first law.
-		for i = 2:ns.P4-1
-			qo_P4(i) = qo_P4(i-1) + qo(ns.P2 + ns.P3 + i);
-		end
+		qo_P6 = qo_P2(end) + 2 * qo(ns.P2+ns.P3, ns.P2);  % Continues from panel 2.
 
 		% Open shear flow in panel 7.
-		qo_P7 = qo_P4(end) + qo(ns.wing);  % Continues from panel 4.
+		qo_P7 = qo(ns.wing, 1);  % Just the first stringer, next to the cut.
+	
+		% Open shear flow in panel 4.
+		qo_P4 = zeros(1, ns.P4-1);
+		qo_P4(1) = qo_P7 + qo(ns.wing-1, ns.wing);  % Continues from panel 7.
+		for i = 2:ns.P4-1
+			qo_P4(i) = qo_P4(i-1) + qo(ns.wing-i, ns.wing-(i-1));
+		end
 
 		% 2.2.3. Closed shear flows at cut (correction).
 		%
@@ -365,6 +368,7 @@ end
 		tr = sym('tr');  % Twist rate [rad/s].
 		q1 = sym('q1');  % Closed shear flow in cell 1 [N/m].
 		q2 = sym('q2');  % Closed shear flow in cell 2 [N/m].
+		q3 = sym('q3');  % Closed shear flow in cell 3 [N/m].
 
 		% Average distance between two succesive stringers.  % PERF: slow.
 		d = @(x, z) (vecnorm([x(2:end); z(2:end)]) - vecnorm([x(1:end-1); z(1:end-1)]))/2;
@@ -377,6 +381,8 @@ end
 			tr == 1/(2*wg.A(2)*mu) * ( ...
 				(wg.L(2)+wg.L(4))*q2 + wg.L(6)*(q2-q1) + wg.L(7)*q2 ...
 				+ sum(qo_P2) * wg.L(2)/(ns.P2-1) - sum(qo_P4) * wg.L(4)/(ns.P4-1) + qo_P6 * wg.L(6) - qo_P7 * wg.L(7)), ...
+			tr == 1/(2*wg.A(3)*mu) * ( ...
+				(wg.L(1)+wg.L(5))*q3 + wg.L(7)*(q3-q2)), ...
 			wl.My == ...
 				  sum(d(x_P2, z_P2).*qo_P2) * wg.L(2)/(ns.P2-1) ...
 				+ sum(d(x_P3, z_P3).*qo_P3) * wg.L(3)/(ns.P3-1) ...
@@ -385,28 +391,31 @@ end
 				- 2 * qo_P7 * wg.Ah(7) ...
 				+ 2 * (wg.Ah(3) - wg.Ah(6)) * q1 ...
 				+ 2 * (wg.Ah(2) + wg.Ah(6) - wg.Ah(4) - wg.Ah(7)) * q2 ...
+				+ 2 * (wg.Ah(1) + wg.Ah(7) + wg.Ah(5)) * q3 ...
 				+ sum(x_af .* B_sigma_yy .* dzdy) ...
 				- sum(z_af .* B_sigma_yy .* dxdy) ...
 		];
 
 		% Solve the system.
-		res = vpasolve(eqns, [tr, q1, q2]);
+		res = vpasolve(eqns, [tr, q1, q2, q3]);
 
 		% Unpack the results of interest.
 		qc(1) = double(res.q1);
 		qc(2) = double(res.q2);
+		qc(3) = double(res.q3);
 
 		% 2.3. Total shear flow and miminum skin thickness.
 
 		% Total shear flows [N/m].
-		q_P2 = q_My(2)           + qo_P2 + qc(2);
-		q_P3 = q_My(1)           + qo_P3 + qc(1);
-		q_P4 = q_My(2)           - qo_P4 + qc(2);
-		q_P6 = q_My(1) - q_My(2) - qo_P6 + qc(1) - qc(2);
-		q_P7 = q_My(2)           - qo_P7 + qc(2);
+		q_P2  =   q_My(2)         + qo_P2 + qc(2);
+		q_P3  =   q_My(1)         + qo_P3 + qc(1);
+		q_P4  = - q_My(2)         - qo_P4 + qc(2);
+		q_P6  = - q_My(1)+q_My(2) - qo_P6 + qc(1)-qc(2);
+		q_P7  = - q_My(2)+q_My(3) - qo_P7 + qc(2);
+		q_P15 =   q_My(3)                 + qc(3);
 
 		% Gather them in one vector.
-		q_tot = [q_P2, q_P3, q_P4, q_P6, q_P7];
+		q_tot = [q_P2, q_P3, q_P4, q_P6, q_P7, q_P15];
 
 		% Minimum thickness of the skin [m].
 		t_min = max(abs(q_tot)) / tau_max;
