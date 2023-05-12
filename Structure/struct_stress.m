@@ -1,12 +1,7 @@
 % TODO:
-% - take the wing taper into account.
-% - The data organisation is messy.
-% - Some values are guessed. Wait for more precise values.
-% - Lots of hardcoded values.
+% - The spars web should not have the same tichness as the skin.
 % - We neglected the air induction system.
-% - the pc structure is not very clean. Fins a way to properly extract x
-%   and z from s, without explicitely define their expressions.
-% - implement 'w' optional argument.
+% - data structures in wing_geometry are a bit messy.
 
 function struct_stress(opts)
 % STRUCT_STRESS  Structural stresses and resulting design choices.
@@ -87,10 +82,11 @@ save(fullfile(file_dir, "../data.mat"), "FusStresses", 'FusDesign', "-append");
 % 3. Wing computations.
 
 % Wing data.
-ns.P2 = 15;  % Number of stringers in panel 2.
-ns.P3 = 15;  % Number of stringers in panel 3.
-ns.P4 = 15;  % Number of stringers in panel 4.
+ns.P2 = 20;  % Number of stringers in panel 2.
+ns.P3 = 20;  % Number of stringers in panel 3.
+ns.P4 = 20;  % Number of stringers in panel 4.
 ns.wing = ns.P2 + ns.P3 + ns.P4;
+t_ratio = 2.5;  % Thickness ratio between spars web and skins.  % TODO: not accurate method.
 
 % This table contains the relevant stresses and resulting dimensions in
 % the selected wing cross sections, for al the CP.
@@ -416,9 +412,11 @@ end
 
 		% Gather them in one vector.
 		q_tot = [q_P2, q_P3, q_P4, q_P6, q_P7, q_P15];
+		% Discard the spars web, as they are not technically "skins".
+		q_tot_skin = [q_P2, q_P3, q_P4, q_P15] / t_ratio;
 
 		% Minimum thickness of the skin [m].
-		t_min = max(abs(q_tot)) / tau_max;
+		t_min = max(abs(q_tot_skin)) / tau_max;
 
 		% Return the computed stresses and designs.
 		stresses = table(wl.y, wl.n, wl.EAS, B_sigma_yy, B_min, q_tot, t_min);
