@@ -240,11 +240,11 @@ end
 
 		% Compute the relevant MNT loads.
 		% FIX: choose reference origin from which to compute the moments.
-		Tx = ( al.n*(W_wing + W_fuel) + L) * sind(aoi) + D_wing * cosd(aoi);
-		Tz = ( al.n*(W_wing + W_fuel) + L) * cosd(aoi) + D_wing * sind(aoi);
-		Mx = (-al.n*(W_wing*dy_wing + W_fuel*dy_fuel) - L*dy_lift) * cosd(aoi);
-		Mz = (-al.n*(W_wing*dy_wing + W_fuel*dy_fuel) - L*dy_wing) * sind(aoi);
-		My = (-al.n*(W_fuel*(x_fuel-x_wing))) * cosd(aoi) - M_wing;
+		Tx = - ( al.n*(W_wing + W_fuel) + L) * sind(aoi) + D_wing * cosd(aoi);
+		Tz =   ( al.n*(W_wing + W_fuel) + L) * cosd(aoi) + D_wing * sind(aoi);
+		Mx =   (-al.n*(W_wing*dy_wing + W_fuel*dy_fuel) - L*dy_lift) * cosd(aoi);
+		Mz =   (-al.n*(W_wing*dy_wing + W_fuel*dy_fuel) - L*dy_wing) * sind(aoi);
+		My =   (-al.n*(W_fuel*(x_fuel-x_wing))) * cosd(aoi) - M_wing;
 
 		% Return the computed loads.
 		loads = table(y, al.n, al.EAS, Tx, Tz, Mx, My, Mz);
